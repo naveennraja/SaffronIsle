@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply overflow-x-hidden bg-cream font-sans text-body text-forest/90 antialiased;
+    background-image: radial-gradient(
+        ellipse 120% 80% at 50% -20%,
+        rgba(232, 245, 239, 0.5),
+        transparent
+      ),
+      radial-gradient(
+        ellipse 60% 50% at 100% 80%,
+        rgba(232, 149, 46, 0.06),
+        transparent
+      );
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-emerald/50 ring-offset-2;
+  }
+
+  ::selection {
+    @apply bg-emerald/20 text-forest;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-serif text-forest;
+  }
+
+  main a:not([class*='no-underline']) {
+    @apply text-emerald underline decoration-emerald/30 underline-offset-2 transition-colors hover:text-emerald-dark hover:decoration-emerald;
+  }
+
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-mist;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-forest/20;
+  }
+}
+
+@layer components {
+  .prose-saffron {
+    @apply prose prose-lg max-w-none
+      prose-headings:font-serif
+      prose-headings:text-forest
+      prose-headings:scroll-mt-24
+      prose-a:text-emerald
+      prose-a:no-underline
+      prose-a:font-medium
+      hover:prose-a:text-emerald-dark
+      hover:prose-a:underline
+      prose-strong:text-forest
+      prose-blockquote:border-saffron
+      prose-blockquote:bg-cream/40
+      prose-blockquote:rounded-r-xl
+      prose-blockquote:not-italic
+      prose-code:text-emerald-dark
+      prose-code:bg-emerald-light/60
+      prose-code:px-1.5
+      prose-code:py-0.5
+      prose-code:rounded-md
+      prose-code:text-sm
+      prose-code:font-normal
+      prose-code:before:content-none
+      prose-code:after:content-none;
+  }
+
+  .surface-card {
+    @apply rounded-2xl border border-white/80 bg-white/90 shadow-card backdrop-blur-sm;
+  }
+
+  .surface-elevated {
+    @apply rounded-2xl border border-mist/60 bg-white shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-glow;
+  }
+}
