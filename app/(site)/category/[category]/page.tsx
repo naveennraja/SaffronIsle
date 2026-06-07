@@ -14,7 +14,7 @@ import { CategoryArticlesClient } from './CategoryArticlesClient'
 import { NewsletterForm } from '@/components/ui/NewsletterForm'
 
 interface PageProps {
-  params: { category: string }
+  params: Promise<{ category: string }>
 }
 
 export function generateStaticParams() {
@@ -22,7 +22,8 @@ export function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const category = getCategoryBySlug(params.category)
+  const { category: categorySlug } = await params
+  const category = getCategoryBySlug(categorySlug)
   if (!category) return { title: 'Category not found' }
 
   return {
@@ -34,14 +35,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
-export default function CategoryPage({ params }: PageProps) {
-  const category = getCategoryBySlug(params.category)
+export default async function CategoryPage({ params }: PageProps) {
+  const { category: categorySlug } = await params
+  const category = getCategoryBySlug(categorySlug)
   if (!category) notFound()
 
-  const articles = getArticlesByCategory(params.category)
+  const articles = getArticlesByCategory(categorySlug)
   const Icon = getCategoryIcon(category.icon)
-  const count = getArticleCountByCategory(params.category)
-  const otherCategories = CATEGORIES.filter((c) => c.slug !== params.category)
+  const count = getArticleCountByCategory(categorySlug)
+  const otherCategories = CATEGORIES.filter((c) => c.slug !== categorySlug)
 
   const hasCityTagged = articles.some((a) => a.city && a.city !== 'all')
 

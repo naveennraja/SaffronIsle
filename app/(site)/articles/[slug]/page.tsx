@@ -24,7 +24,7 @@ const RelatedArticles = dynamic(
 )
 
 interface PageProps {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }
 
 export function generateStaticParams() {
@@ -32,7 +32,8 @@ export function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const article = getArticleBySlug(params.slug)
+  const { slug } = await params
+  const article = getArticleBySlug(slug)
   if (!article) return { title: 'Article not found' }
 
   const url = `${getSiteUrl()}/articles/${article.slug}`
@@ -89,11 +90,12 @@ function ArticleJsonLd({ article }: { article: NonNullable<ReturnType<typeof get
   )
 }
 
-export default function ArticlePage({ params }: PageProps) {
-  const article = getArticleBySlug(params.slug)
+export default async function ArticlePage({ params }: PageProps) {
+  const { slug } = await params
+  const article = getArticleBySlug(slug)
   if (!article) notFound()
 
-  const related = getRelatedArticles(params.slug, 3)
+  const related = getRelatedArticles(slug, 3)
   const toc = extractTocFromMdx(article.content)
   const { content, ...meta } = article
 
