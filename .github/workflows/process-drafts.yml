@@ -1,0 +1,44 @@
+name: Process draft articles
+
+on:
+  schedule:
+    - cron: '0 8 * * *'   # every day at 8am UTC (9am Ireland time)
+  workflow_dispatch:        # lets you trigger it manually from GitHub too
+
+jobs:
+  process:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check for draft files
+        id: check
+        run: |
+          count=$(find drafts -maxdepth 1 -name "*.docx" | wc -l | tr -d ' ')
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          echo "Found $count draft file(s)"
+
+      - name: Convert drafts to MDX
+        if: steps.check.outputs.count != '0'
+        run: node scripts/process-drafts.js
+
+      - name: Commit and push new articles
+        if: steps.check.outputs.count != '0'
+        run: |
+          git config user.name "Saffron Isle Bot"
+          git config user.email "bot@saffronisle.ie"
+          git add content/ drafts/
+          git diff --staged --quiet && echo "Nothing to commit" || \
+            git commit -m "auto: publish articles from $(date +'%Y-%m-%d') drafts"
+          git push

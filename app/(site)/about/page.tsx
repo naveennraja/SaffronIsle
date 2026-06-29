@@ -11,10 +11,10 @@ export const metadata: Metadata = {
 
 const CONTRIBUTORS = [
   {
-    name: 'Naveen Raja',
-    initials: 'NR',
+    name: 'Nethra Bhaskar',
+    initials: 'NB',
     role: 'Founder & writer',
-    bio: 'Moved from Chennai to Dublin in 2022. Writes about visas, admin, and settling in.',
+    bio: 'Moved from India to Ireland and writes honest guides on visas, student life, and settling in.',
   },
 ]
 
