@@ -3,7 +3,7 @@ export const SITE = {
   tagline: 'From one home to another',
   description:
     'Your guide to life in Ireland — visa help, student tips, food, work, housing, and stories from the Indian community.',
-  contactEmail: 'hello@saffronisle.ie',
+  contactEmail: 'hello@saffronisle.com',
   storySubmissionFormUrl: 'https://forms.gle/placeholder-story-form',
   social: {
     instagram: 'https://instagram.com/saffronisle',
