@@ -6,8 +6,9 @@ export const SITE = {
   contactEmail: 'hello@saffronisle.com',
   storySubmissionFormUrl: 'https://forms.gle/placeholder-story-form',
   social: {
-    instagram: 'https://instagram.com/saffronisle',
-    youtube: 'https://youtube.com/@saffronisle',
-    whatsapp: 'https://chat.whatsapp.com/placeholder',
+    instagram: 'https://www.instagram.com/saffronisle_ireland',
+    // Add these when the accounts exist — leave empty to hide their links
+    youtube: '',
+    whatsapp: '',
   },
 } as const

@@ -22,33 +22,39 @@ export function Footer() {
               {SITE.tagline}
             </p>
             <div className="flex gap-1">
-              <a
-                href={SITE.social.instagram}
-                className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-gray-400 no-underline transition-colors hover:bg-white/10 hover:text-saffron"
-                aria-label="Instagram"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Instagram className="h-5 w-5" />
-              </a>
-              <a
-                href={SITE.social.youtube}
-                className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-gray-400 no-underline transition-colors hover:bg-white/10 hover:text-saffron"
-                aria-label="YouTube"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Youtube className="h-5 w-5" />
-              </a>
-              <a
-                href={SITE.social.whatsapp}
-                className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-gray-400 no-underline transition-colors hover:bg-white/10 hover:text-saffron"
-                aria-label="WhatsApp"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <MessageCircle className="h-5 w-5" />
-              </a>
+              {SITE.social.instagram && (
+                <a
+                  href={SITE.social.instagram}
+                  className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-gray-400 no-underline transition-colors hover:bg-white/10 hover:text-saffron"
+                  aria-label="Instagram"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Instagram className="h-5 w-5" />
+                </a>
+              )}
+              {SITE.social.youtube && (
+                <a
+                  href={SITE.social.youtube}
+                  className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-gray-400 no-underline transition-colors hover:bg-white/10 hover:text-saffron"
+                  aria-label="YouTube"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Youtube className="h-5 w-5" />
+                </a>
+              )}
+              {SITE.social.whatsapp && (
+                <a
+                  href={SITE.social.whatsapp}
+                  className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-gray-400 no-underline transition-colors hover:bg-white/10 hover:text-saffron"
+                  aria-label="WhatsApp"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <MessageCircle className="h-5 w-5" />
+                </a>
+              )}
             </div>
           </div>
 

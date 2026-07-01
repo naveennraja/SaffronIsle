@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { MessageCircle, Bell, Users, PenLine } from 'lucide-react'
+import { MessageCircle, Bell, Users, PenLine, Instagram } from 'lucide-react'
 import { SITE } from '@/lib/site-config'
 import { getSiteUrl } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
@@ -86,7 +86,7 @@ export default function CommunityPage() {
           ))}
         </div>
 
-        {/* WhatsApp */}
+        {/* Instagram */}
         <div className="relative mb-12 overflow-hidden rounded-3xl bg-forest px-8 py-12 text-center shadow-card md:px-12 md:py-14">
           <div
             className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-saffron/20 blur-2xl"
@@ -98,23 +98,23 @@ export default function CommunityPage() {
           />
           <div className="relative">
             <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-saffron/20 text-saffron">
-              <MessageCircle className="h-7 w-7" aria-hidden />
+              <Instagram className="h-7 w-7" aria-hidden />
             </div>
             <h2 className="mb-3 font-serif text-h2 text-saffron">
-              WhatsApp channel
+              Follow us on Instagram
             </h2>
             <p className="mx-auto mb-8 max-w-sm text-gray-300">
-              Quick updates, community questions, and local tips — join our
-              channel for free.
+              Quick updates, community stories, and local tips — follow
+              @saffronisle_ireland for free.
             </p>
             <Button
-              href={SITE.social.whatsapp}
+              href={SITE.social.instagram}
               external
               variant="secondary"
               size="lg"
               className="border border-white/20 bg-white/10 text-cream hover:bg-white/20"
             >
-              Join on WhatsApp
+              Follow on Instagram
             </Button>
           </div>
         </div>
