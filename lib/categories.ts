@@ -19,6 +19,8 @@ export interface Category {
   icon: string
   color: CategoryColor
   priority: number
+  /** Hidden from navigation and listings until the category has articles */
+  hidden?: boolean
 }
 
 export const CATEGORIES: Category[] = [
@@ -57,6 +59,7 @@ export const CATEGORIES: Category[] = [
     icon: 'briefcase',
     color: 'forest',
     priority: 4,
+    hidden: true,
   },
   {
     slug: 'finances',
@@ -75,6 +78,7 @@ export const CATEGORIES: Category[] = [
     icon: 'home',
     color: 'saffron',
     priority: 6,
+    hidden: true,
   },
   {
     slug: 'explore-ireland',
@@ -84,6 +88,7 @@ export const CATEGORIES: Category[] = [
     icon: 'mountain',
     color: 'forest',
     priority: 7,
+    hidden: true,
   },
   {
     slug: 'community-stories',
@@ -110,6 +115,11 @@ const ICON_MAP: Record<string, LucideIcon> = {
 export function getCategoryIcon(iconName: string): LucideIcon {
   return ICON_MAP[iconName] ?? FileBadge
 }
+
+/** Categories shown in navigation and listings (hides empty ones) */
+export const VISIBLE_CATEGORIES: Category[] = CATEGORIES.filter(
+  (c) => !c.hidden
+)
 
 export function getCategoryBySlug(slug: string): Category | undefined {
   return CATEGORIES.find((c) => c.slug === slug)

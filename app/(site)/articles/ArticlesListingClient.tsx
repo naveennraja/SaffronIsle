@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { CATEGORIES } from '@/lib/categories'
+import { VISIBLE_CATEGORIES } from '@/lib/categories'
 import { ArticleGrid } from '@/components/articles/ArticleGrid'
 import type { ArticleMeta } from '@/lib/types'
 import { cn } from '@/lib/utils'
@@ -37,7 +37,7 @@ export function ArticlesListingClient({ articles }: ArticlesListingClientProps) 
         >
           All
         </button>
-        {CATEGORIES.map((cat) => (
+        {VISIBLE_CATEGORIES.map((cat) => (
           <button
             key={cat.slug}
             type="button"

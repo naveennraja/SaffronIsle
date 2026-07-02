@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Instagram, Youtube, MessageCircle } from 'lucide-react'
-import { CATEGORIES } from '@/lib/categories'
+import { VISIBLE_CATEGORIES } from '@/lib/categories'
 import { SITE } from '@/lib/site-config'
 import { NewsletterForm } from '@/components/ui/NewsletterForm'
 
@@ -63,7 +63,7 @@ export function Footer() {
               Explore
             </h3>
             <ul className="space-y-2">
-              {CATEGORIES.map(({ slug, label }) => (
+              {VISIBLE_CATEGORIES.map(({ slug, label }) => (
                 <li key={slug}>
                   <Link
                     href={`/category/${slug}`}

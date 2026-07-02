@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import {
-  CATEGORIES,
+  VISIBLE_CATEGORIES,
   getCategoryBySlug,
   getCategoryIcon,
   getCategorySlugs,
@@ -43,7 +43,9 @@ export default async function CategoryPage({ params }: PageProps) {
   const articles = getArticlesByCategory(categorySlug)
   const Icon = getCategoryIcon(category.icon)
   const count = getArticleCountByCategory(categorySlug)
-  const otherCategories = CATEGORIES.filter((c) => c.slug !== categorySlug)
+  const otherCategories = VISIBLE_CATEGORIES.filter(
+    (c) => c.slug !== categorySlug
+  )
 
   const hasCityTagged = articles.some((a) => a.city && a.city !== 'all')
 

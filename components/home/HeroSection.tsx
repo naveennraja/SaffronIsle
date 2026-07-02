@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { ArrowRight, MapPin, Users, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
-import { CATEGORIES } from '@/lib/categories'
+import { VISIBLE_CATEGORIES } from '@/lib/categories'
 
 const HIGHLIGHTS = [
   { icon: BookOpen, label: 'Practical guides', value: '6+ topics' },
@@ -10,7 +10,7 @@ const HIGHLIGHTS = [
 ]
 
 export function HeroSection() {
-  const topCategories = CATEGORIES.slice(0, 4)
+  const topCategories = VISIBLE_CATEGORIES.slice(0, 4)
 
   return (
     <section className="relative overflow-hidden border-b border-mist/60 bg-hero-mesh">

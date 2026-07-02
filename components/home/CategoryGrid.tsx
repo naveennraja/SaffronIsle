@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import {
-  CATEGORIES,
+  VISIBLE_CATEGORIES,
   getCategoryIcon,
   type CategoryColor,
 } from '@/lib/categories'
@@ -35,7 +35,7 @@ export function CategoryGrid() {
           description="Everything you need — from visas to weekend trips."
         />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
-          {CATEGORIES.sort((a, b) => a.priority - b.priority).map((category) => {
+          {VISIBLE_CATEGORIES.sort((a, b) => a.priority - b.priority).map((category) => {
             const Icon = getCategoryIcon(category.icon)
             const count = getArticleCountByCategory(category.slug)
 

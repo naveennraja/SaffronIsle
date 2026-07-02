@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { CATEGORIES } from '@/lib/categories'
+import { VISIBLE_CATEGORIES } from '@/lib/categories'
 
 const NAV_LINKS = [
   { href: '/category/visa', label: 'Visa' },
@@ -78,7 +78,7 @@ export function MobileMenu({ open, onClose }: MobileMenuProps) {
           <p className="px-4 pb-1 text-label font-semibold uppercase tracking-widest text-saffron-dark">
             All categories
           </p>
-          {CATEGORIES.map(({ slug, label }) => (
+          {VISIBLE_CATEGORIES.map(({ slug, label }) => (
             <Link
               key={slug}
               href={`/category/${slug}`}

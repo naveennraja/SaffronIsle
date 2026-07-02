@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next'
 import { getAllArticles } from '@/lib/articles'
-import { getCategorySlugs } from '@/lib/categories'
+import { VISIBLE_CATEGORIES } from '@/lib/categories'
 import { getSiteUrl } from '@/lib/utils'
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -15,11 +15,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${base}/search`, changeFrequency: 'monthly', priority: 0.4 },
   ]
 
-  const categoryPages: MetadataRoute.Sitemap = getCategorySlugs().map((slug) => ({
-    url: `${base}/category/${slug}`,
-    changeFrequency: 'weekly' as const,
-    priority: 0.8,
-  }))
+  const categoryPages: MetadataRoute.Sitemap = VISIBLE_CATEGORIES.map(
+    ({ slug }) => ({
+      url: `${base}/category/${slug}`,
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+    })
+  )
 
   const articlePages: MetadataRoute.Sitemap = articles.map((article) => ({
     url: `${base}/articles/${article.slug}`,
