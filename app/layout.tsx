@@ -42,7 +42,15 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${lora.variable}`}>
+    // data-scroll-behavior tells Next to suppress the global
+    // `scroll-behavior: smooth` (app/globals.css) during route changes, so
+    // navigation jumps to the top instead of animating. Next 15 did this
+    // implicitly; from Next 16 it is opt-in.
+    <html
+      lang="en"
+      data-scroll-behavior="smooth"
+      className={`${inter.variable} ${lora.variable}`}
+    >
       <body>
         <Navbar />
         <main>{children}</main>
