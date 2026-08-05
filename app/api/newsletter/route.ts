@@ -72,10 +72,13 @@ export async function POST(request: Request) {
 
     const provider = process.env.NEWSLETTER_PROVIDER ?? 'brevo'
 
+    // Never claim success without a provider behind it. This used to return
+    // `{ success: true }` when unconfigured, so the form told visitors they
+    // were subscribed while the address was thrown away.
     if (!process.env.NEWSLETTER_API_KEY) {
       return NextResponse.json(
-        { success: true, message: 'Subscribed (dev mode — API key not set)' },
-        { status: 200 }
+        { error: 'The newsletter is not available yet — please check back soon.' },
+        { status: 503 }
       )
     }
 

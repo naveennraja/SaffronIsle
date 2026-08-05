@@ -9,6 +9,7 @@ import { CategoryGrid } from '@/components/home/CategoryGrid'
 import { RecentArticlesSection } from '@/components/home/RecentArticlesSection'
 import { CommunityStrip } from '@/components/home/CommunityStrip'
 import { NewsletterBanner } from '@/components/home/NewsletterBanner'
+import { NEWSLETTER_ENABLED } from '@/lib/site-config'
 
 export default function HomePage() {
   const featured = getFeaturedArticles(3)
@@ -22,7 +23,7 @@ export default function HomePage() {
       <CategoryGrid />
       <RecentArticlesSection articles={recent} />
       <CommunityStrip stories={communityStories} />
-      <NewsletterBanner />
+      {NEWSLETTER_ENABLED && <NewsletterBanner />}
     </>
   )
 }

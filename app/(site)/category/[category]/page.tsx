@@ -12,6 +12,7 @@ import { getSiteUrl } from '@/lib/utils'
 import { ArticleGrid } from '@/components/articles/ArticleGrid'
 import { CategoryArticlesClient } from './CategoryArticlesClient'
 import { NewsletterForm } from '@/components/ui/NewsletterForm'
+import { NEWSLETTER_ENABLED } from '@/lib/site-config'
 
 interface PageProps {
   params: Promise<{ category: string }>
@@ -94,13 +95,15 @@ export default async function CategoryPage({ params }: PageProps) {
               </ul>
             </section>
 
-            <section className="rounded-2xl border border-emerald/15 bg-gradient-to-br from-emerald-light/30 to-white p-6">
-              <h2 className="mb-2 font-serif text-h3 text-forest">Newsletter</h2>
-              <p className="mb-4 text-small leading-relaxed text-gray-600">
-                Weekly tips for life in Ireland.
-              </p>
-              <NewsletterForm compact />
-            </section>
+            {NEWSLETTER_ENABLED && (
+              <section className="rounded-2xl border border-emerald/15 bg-gradient-to-br from-emerald-light/30 to-white p-6">
+                <h2 className="mb-2 font-serif text-h3 text-forest">Newsletter</h2>
+                <p className="mb-4 text-small leading-relaxed text-gray-600">
+                  Weekly tips for life in Ireland.
+                </p>
+                <NewsletterForm compact />
+              </section>
+            )}
           </div>
         </aside>
       </div>

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { MessageCircle, Bell, Users, PenLine, Instagram } from 'lucide-react'
-import { SITE } from '@/lib/site-config'
+import { SITE, NEWSLETTER_ENABLED } from '@/lib/site-config'
 import { getSiteUrl } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
 import { NewsletterForm } from '@/components/ui/NewsletterForm'
@@ -120,18 +120,20 @@ export default function CommunityPage() {
         </div>
 
         {/* Newsletter */}
-        <div className="mb-12 rounded-3xl border border-emerald/20 bg-gradient-to-br from-emerald-light/40 via-white to-white px-8 py-10 md:px-12">
-          <div className="mx-auto max-w-md text-center">
-            <h2 className="mb-3 font-serif text-h2 text-forest">Newsletter</h2>
-            <p className="mb-6 text-forest/65">
-              Visa updates and weekly tips, straight to your inbox.
-            </p>
-            <NewsletterForm />
-            <p className="mt-3 text-small text-forest/40">
-              No spam. Unsubscribe any time.
-            </p>
+        {NEWSLETTER_ENABLED && (
+          <div className="mb-12 rounded-3xl border border-emerald/20 bg-gradient-to-br from-emerald-light/40 via-white to-white px-8 py-10 md:px-12">
+            <div className="mx-auto max-w-md text-center">
+              <h2 className="mb-3 font-serif text-h2 text-forest">Newsletter</h2>
+              <p className="mb-6 text-forest/65">
+                Visa updates and weekly tips, straight to your inbox.
+              </p>
+              <NewsletterForm />
+              <p className="mt-3 text-small text-forest/40">
+                No spam. Unsubscribe any time.
+              </p>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Story submission */}
         <div className="rounded-3xl border border-saffron/25 bg-white px-8 py-10 text-center shadow-soft md:px-12">

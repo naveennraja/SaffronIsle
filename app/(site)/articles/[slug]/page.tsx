@@ -13,6 +13,7 @@ import { ArticleHeader } from '@/components/articles/ArticleHeader'
 import { ArticleBody } from '@/components/articles/ArticleBody'
 import { TableOfContents } from '@/components/articles/TableOfContents'
 import { NewsletterBanner } from '@/components/home/NewsletterBanner'
+import { NEWSLETTER_ENABLED } from '@/lib/site-config'
 import { formatDate } from '@/lib/utils'
 
 const RelatedArticles = dynamic(
@@ -155,9 +156,11 @@ export default async function ArticlePage({ params }: PageProps) {
         </aside>
       </div>
 
-      <div className="mt-12">
-        <NewsletterBanner />
-      </div>
+      {NEWSLETTER_ENABLED && (
+        <div className="mt-12">
+          <NewsletterBanner />
+        </div>
+      )}
     </article>
   )
 }

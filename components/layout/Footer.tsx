@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Instagram, Youtube, MessageCircle } from 'lucide-react'
 import { VISIBLE_CATEGORIES } from '@/lib/categories'
-import { SITE } from '@/lib/site-config'
+import { SITE, NEWSLETTER_ENABLED } from '@/lib/site-config'
 import { NewsletterForm } from '@/components/ui/NewsletterForm'
 
 export function Footer() {
@@ -118,15 +118,17 @@ export function Footer() {
             </ul>
           </div>
 
-          <div>
-            <h3 className="mb-4 text-label font-semibold uppercase tracking-widest text-saffron">
-              Newsletter
-            </h3>
-            <p className="mb-4 text-small leading-relaxed text-gray-400">
-              Visa updates and weekly tips.
-            </p>
-            <NewsletterForm compact />
-          </div>
+          {NEWSLETTER_ENABLED && (
+            <div>
+              <h3 className="mb-4 text-label font-semibold uppercase tracking-widest text-saffron">
+                Newsletter
+              </h3>
+              <p className="mb-4 text-small leading-relaxed text-gray-400">
+                Visa updates and weekly tips.
+              </p>
+              <NewsletterForm compact />
+            </div>
+          )}
         </div>
 
         <div className="mt-12 flex flex-col gap-2 border-t border-white/10 pt-8 text-small text-gray-500 sm:flex-row sm:justify-between">
