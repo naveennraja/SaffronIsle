@@ -236,6 +236,10 @@ export default function AdminPage() {
               className="w-full rounded-lg border border-mist px-4 py-2.5 text-sm file:mr-3 file:rounded file:border-0 file:bg-saffron/10 file:px-3 file:py-1 file:text-sm file:font-medium file:text-saffron-dark focus:outline-none"
             />
             {imagePreview && (
+              // Deliberately a plain <img>: this is a blob: URL from the file
+              // the user just picked, which next/image cannot optimise or
+              // even load. Nothing is fetched over the network here.
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={imagePreview}
                 alt="Cover preview"

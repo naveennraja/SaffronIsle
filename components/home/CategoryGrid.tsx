@@ -2,10 +2,10 @@ import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import {
   VISIBLE_CATEGORIES,
-  getCategoryIcon,
   type CategoryColor,
 } from '@/lib/categories'
 import { getArticleCountByCategory } from '@/lib/articles'
+import { CategoryIcon } from '@/components/ui/CategoryIcon'
 import { SectionHeader } from '@/components/ui/SectionHeader'
 import { cn } from '@/lib/utils'
 
@@ -36,7 +36,6 @@ export function CategoryGrid() {
         />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
           {VISIBLE_CATEGORIES.sort((a, b) => a.priority - b.priority).map((category) => {
-            const Icon = getCategoryIcon(category.icon)
             const count = getArticleCountByCategory(category.slug)
 
             return (
@@ -54,7 +53,7 @@ export function CategoryGrid() {
                     iconStyles[category.color]
                   )}
                 >
-                  <Icon className="h-6 w-6" aria-hidden />
+                  <CategoryIcon name={category.icon} className="h-6 w-6" />
                 </div>
                 <h3 className="mb-1 font-serif text-h3 text-forest">
                   {category.label}

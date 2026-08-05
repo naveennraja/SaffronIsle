@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useSyncExternalStore } from 'react'
 import { cn } from '@/lib/utils'
 
 interface ChecklistItemProps {
@@ -8,19 +8,50 @@ interface ChecklistItemProps {
   children: React.ReactNode
 }
 
-export function ChecklistItem({ id, children }: ChecklistItemProps) {
-  const [checked, setChecked] = useState(false)
+/**
+ * Tiny external store over localStorage.
+ *
+ * useSyncExternalStore is the supported way to read from something outside
+ * React. Reading in an effect instead renders unchecked first and corrects
+ * itself a frame later, which shows as a visible flicker on a ticked item —
+ * and React Compiler flags the setState-in-effect that requires.
+ */
+const listeners = new Set<() => void>()
 
-  useEffect(() => {
-    const stored = localStorage.getItem(`checklist-${id}`)
-    if (stored === 'true') setChecked(true)
-  }, [id])
-
-  function toggle() {
-    const next = !checked
-    setChecked(next)
-    localStorage.setItem(`checklist-${id}`, String(next))
+function subscribe(onChange: () => void) {
+  listeners.add(onChange)
+  // Keeps two tabs of the same checklist in agreement.
+  window.addEventListener('storage', onChange)
+  return () => {
+    listeners.delete(onChange)
+    window.removeEventListener('storage', onChange)
   }
+}
+
+function readChecked(id: string): boolean {
+  try {
+    return localStorage.getItem(`checklist-${id}`) === 'true'
+  } catch {
+    // Private browsing or storage disabled — treat as unchecked.
+    return false
+  }
+}
+
+function writeChecked(id: string, value: boolean) {
+  try {
+    localStorage.setItem(`checklist-${id}`, String(value))
+  } catch {
+    // Ignore: the checkbox still toggles for this session.
+  }
+  listeners.forEach((notify) => notify())
+}
+
+export function ChecklistItem({ id, children }: ChecklistItemProps) {
+  const getSnapshot = useCallback(() => readChecked(id), [id])
+  // Nothing is checked on the server, which matches the pre-hydration HTML.
+  const getServerSnapshot = useCallback(() => false, [])
+
+  const checked = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
 
   return (
     <label
@@ -32,7 +63,7 @@ export function ChecklistItem({ id, children }: ChecklistItemProps) {
       <input
         type="checkbox"
         checked={checked}
-        onChange={toggle}
+        onChange={() => writeChecked(id, !checked)}
         className="mt-1 h-5 w-5 shrink-0 accent-emerald"
         aria-describedby={`checklist-label-${id}`}
       />

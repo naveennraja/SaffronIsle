@@ -4,9 +4,9 @@ import Link from 'next/link'
 import {
   VISIBLE_CATEGORIES,
   getCategoryBySlug,
-  getCategoryIcon,
   getCategorySlugs,
 } from '@/lib/categories'
+import { CategoryIcon } from '@/components/ui/CategoryIcon'
 import { getArticlesByCategory, getArticleCountByCategory } from '@/lib/articles'
 import { getSiteUrl } from '@/lib/utils'
 import { ArticleGrid } from '@/components/articles/ArticleGrid'
@@ -42,7 +42,6 @@ export default async function CategoryPage({ params }: PageProps) {
   if (!category) notFound()
 
   const articles = getArticlesByCategory(categorySlug)
-  const Icon = getCategoryIcon(category.icon)
   const count = getArticleCountByCategory(categorySlug)
   const otherCategories = VISIBLE_CATEGORIES.filter(
     (c) => c.slug !== categorySlug
@@ -55,7 +54,7 @@ export default async function CategoryPage({ params }: PageProps) {
       {/* Category header */}
       <header className="mb-10 overflow-hidden rounded-3xl border border-mist/60 bg-gradient-to-br from-cream via-white to-emerald-light/20 p-8 shadow-soft md:p-10">
         <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-light text-emerald-dark shadow-soft">
-          <Icon className="h-7 w-7" aria-hidden />
+          <CategoryIcon name={category.icon} className="h-7 w-7" />
         </div>
         <h1 className="mb-2 font-serif text-h1 text-forest">{category.label}</h1>
         <p className="mb-3 max-w-2xl text-lg leading-relaxed text-forest/70">

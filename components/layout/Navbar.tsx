@@ -30,9 +30,14 @@ export function Navbar() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  useEffect(() => {
+  // Close the mobile menu on navigation. Adjusting state during render is
+  // React's documented way to reset state when a value changes — doing it in
+  // an effect renders the stale open menu first, then immediately re-renders.
+  const [lastPathname, setLastPathname] = useState(pathname)
+  if (pathname !== lastPathname) {
+    setLastPathname(pathname)
     setMenuOpen(false)
-  }, [pathname])
+  }
 
   const transparent = isHome && !scrolled
 
