@@ -9,9 +9,9 @@
  *                   finances, housing, explore-ireland, community-stories
  */
 
-const mammoth = require('mammoth')
 const fs = require('fs')
 const path = require('path')
+const { convertDocx } = require('../lib/docx-to-mdx.js')
 
 const DRAFTS_DIR = path.join(process.cwd(), 'drafts')
 const PROCESSED_DIR = path.join(DRAFTS_DIR, 'processed')
@@ -34,48 +34,6 @@ function slugToTitle(slug) {
     .split('-')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ')
-}
-
-function htmlToMarkdown(html) {
-  return html
-    .replace(/<h1[^>]*>(.*?)<\/h1>/gi, '# $1\n\n')
-    .replace(/<h2[^>]*>(.*?)<\/h2>/gi, '## $1\n\n')
-    .replace(/<h3[^>]*>(.*?)<\/h3>/gi, '### $1\n\n')
-    .replace(/<h4[^>]*>(.*?)<\/h4>/gi, '#### $1\n\n')
-    .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**')
-    .replace(/<b[^>]*>(.*?)<\/b>/gi, '**$1**')
-    .replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*')
-    .replace(/<i[^>]*>(.*?)<\/i>/gi, '*$1*')
-    .replace(/<li[^>]*>(.*?)<\/li>/gi, '- $1\n')
-    .replace(/<\/ul>\s*<ul[^>]*>/gi, '\n')
-    .replace(/<ul[^>]*>|<\/ul>/gi, '\n')
-    .replace(/<ol[^>]*>|<\/ol>/gi, '\n')
-    .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '[$2]($1)')
-    .replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n')
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&nbsp;/g, ' ')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim()
-}
-
-function extractDescription(markdown) {
-  const firstPara = markdown
-    .split('\n\n')
-    .map((p) => p.trim())
-    .find((p) => p && !p.startsWith('#') && !p.startsWith('-'))
-
-  if (!firstPara) return ''
-
-  return firstPara
-    .replace(/[*_`]/g, '')
-    .slice(0, 155)
-    .trim()
 }
 
 function buildFrontmatter({ title, slug, category, description, date }) {
@@ -110,6 +68,15 @@ async function processFile(filePath) {
     return null
   }
 
+  // Same rule the web uploader enforces. The slug becomes a path segment for
+  // both the .mdx and the extracted images, so it must not escape its folder.
+  if (!/^[a-z0-9-]+$/.test(slug)) {
+    console.error(
+      `❌  "${filename}.docx" — slug "${slug}" must be lowercase letters, numbers and hyphens only`
+    )
+    return null
+  }
+
   const outputPath = path.join(CONTENT_DIR, category, `${slug}.mdx`)
 
   if (fs.existsSync(outputPath)) {
@@ -119,26 +86,39 @@ async function processFile(filePath) {
 
   console.log(`📄  Converting: ${filename}.docx …`)
 
-  const { value: html, messages } = await mammoth.convertToHtml({ path: filePath })
+  const { markdown, description, images, warnings, messages } = await convertDocx({
+    path: filePath,
+    slug,
+  })
 
   if (messages.length > 0) {
     messages.forEach((m) => console.warn(`    ⚠️  ${m.message}`))
   }
+  warnings.forEach((w) => console.warn(`    ⚠️  ${w}`))
 
-  const markdown = htmlToMarkdown(html)
   const title = slugToTitle(slug)
-  const description = extractDescription(markdown) || `${title} — a guide for Indians in Ireland.`
+  const finalDescription = description || `${title} — a guide for Indians in Ireland.`
   const date = new Date().toISOString().split('T')[0]
 
-  const content = `${buildFrontmatter({ title, slug, category, description, date })}\n\n${markdown}\n`
+  const content = `${buildFrontmatter({ title, slug, category, description: finalDescription, date })}\n\n${markdown}\n`
 
   const categoryDir = path.join(CONTENT_DIR, category)
   if (!fs.existsSync(categoryDir)) {
     fs.mkdirSync(categoryDir, { recursive: true })
   }
 
+  // Images embedded in the document, written where the MDX now references them.
+  for (const img of images) {
+    const dest = path.join(process.cwd(), img.path)
+    fs.mkdirSync(path.dirname(dest), { recursive: true })
+    fs.writeFileSync(dest, img.buffer)
+  }
+
   fs.writeFileSync(outputPath, content, 'utf-8')
-  console.log(`✅  Created: content/articles/${category}/${slug}.mdx`)
+  console.log(
+    `✅  Created: content/articles/${category}/${slug}.mdx` +
+      (images.length > 0 ? ` (+${images.length} image${images.length === 1 ? '' : 's'})` : '')
+  )
 
   return { filename, category, slug, outputPath }
 }

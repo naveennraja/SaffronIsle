@@ -1,6 +1,7 @@
 import { Callout } from '@/components/mdx/Callout'
 import { ChecklistItem } from '@/components/mdx/ChecklistItem'
 import { AffiliateCTA } from '@/components/mdx/AffiliateCTA'
+import { ArticleImage } from '@/components/mdx/ArticleImage'
 
 function slugifyHeading(text: string): string {
   return text
@@ -36,6 +37,7 @@ export const mdxComponents = {
   Callout,
   ChecklistItem,
   AffiliateCTA,
+  ArticleImage,
   h2: createHeading(2),
   h3: createHeading(3),
 }

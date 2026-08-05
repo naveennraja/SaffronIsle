@@ -15,6 +15,9 @@ const CATEGORIES = [
 
 type Status = 'idle' | 'loading' | 'success' | 'error' | 'auth'
 
+/** Vercel rejects request bodies over ~4.5MB with an HTML error page. */
+const MAX_UPLOAD_BYTES = 4_000_000
+
 export default function AdminPage() {
   const [password, setPassword] = useState('')
   const [authed, setAuthed] = useState(false)
@@ -28,6 +31,7 @@ export default function AdminPage() {
   const [title, setTitle] = useState('')
   const [status, setStatus] = useState<Status>('idle')
   const [message, setMessage] = useState('')
+  const [warnings, setWarnings] = useState<string[]>([])
 
   function handleAuth(e: React.FormEvent) {
     e.preventDefault()
@@ -58,8 +62,23 @@ export default function AdminPage() {
     e.preventDefault()
     if (!file || !image || !slug.trim()) return
 
+    // Catch oversize uploads here — Vercel answers them with an HTML error
+    // page, which would otherwise surface as a meaningless "Upload failed".
+    const totalBytes = file.size + image.size
+    if (totalBytes > MAX_UPLOAD_BYTES) {
+      setStatus('error')
+      setWarnings([])
+      setMessage(
+        `This upload is ${(totalBytes / 1_000_000).toFixed(1)}MB, which is too large ` +
+          `(the limit is about 4MB). In Word: select a picture, then Picture Format → ` +
+          `Compress Pictures → Email (96 ppi), and save again.`
+      )
+      return
+    }
+
     setStatus('loading')
     setMessage('')
+    setWarnings([])
 
     const formData = new FormData()
     formData.append('file', file)
@@ -71,10 +90,29 @@ export default function AdminPage() {
 
     try {
       const res = await fetch('/api/admin/upload', { method: 'POST', body: formData })
+
+      // A 413 from the platform comes back as HTML, not JSON — read it before
+      // res.json() throws and hides the real reason.
+      if (!res.headers.get('content-type')?.includes('application/json')) {
+        setStatus('error')
+        setMessage(
+          res.status === 413
+            ? 'This upload is too large (the limit is about 4MB). Compress the pictures in Word and try again.'
+            : `The server returned an unexpected response (${res.status}). Please try again.`
+        )
+        return
+      }
+
       const data = await res.json()
       if (data.ok) {
+        const count: number = data.imageCount ?? 0
         setStatus('success')
-        setMessage(`Article published! It will be live in ~1 minute.`)
+        setMessage(
+          count > 0
+            ? `Article published with ${count} picture${count === 1 ? '' : 's'}! It will be live in ~1 minute.`
+            : `Article published! It will be live in ~1 minute.`
+        )
+        setWarnings(data.warnings ?? [])
         setFile(null)
         setImage(null)
         setImagePreview(null)
@@ -83,10 +121,12 @@ export default function AdminPage() {
       } else {
         setStatus('error')
         setMessage(data.error || 'Something went wrong')
+        setWarnings([])
       }
     } catch {
       setStatus('error')
       setMessage('Upload failed — please try again')
+      setWarnings([])
     }
   }
 
@@ -207,6 +247,17 @@ export default function AdminPage() {
           {message && (
             <div className={`rounded-lg px-4 py-3 text-sm ${status === 'success' ? 'bg-emerald/10 text-emerald-800' : 'bg-red-50 text-red-700'}`}>
               {message}
+            </div>
+          )}
+
+          {warnings.length > 0 && (
+            <div className="rounded-lg bg-saffron/10 px-4 py-3 text-sm text-saffron-dark">
+              <p className="mb-1 font-semibold">Worth checking:</p>
+              <ul className="list-disc space-y-1 pl-5">
+                {warnings.map((w) => (
+                  <li key={w}>{w}</li>
+                ))}
+              </ul>
             </div>
           )}
 
