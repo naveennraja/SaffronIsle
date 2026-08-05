@@ -39,8 +39,15 @@ npm run dev     # recommended for local work
 | `NEWSLETTER_API_KEY` | Brevo or Mailchimp API key |
 | `NEWSLETTER_LIST_ID` | List ID from your provider |
 | `NEWSLETTER_PROVIDER` | `brevo` (default) or `mailchimp` |
+| `ADMIN_PASSWORD` | Password for the `/admin` publishing page |
+| `GITHUB_TOKEN` | GitHub PAT with `contents: write` on the site repo — `/admin` commits articles through it |
+| `GITHUB_REPO` | Target repo for `/admin` commits, e.g. `naveennraja/SaffronIsle` |
 
 Without `NEWSLETTER_API_KEY`, newsletter signups succeed in dev mode without calling an external API.
+
+`.env.local` is git-ignored and applies to local dev only. The `/admin` page runs server-side in
+production, so `ADMIN_PASSWORD`, `GITHUB_TOKEN` and `GITHUB_REPO` must **also** be set in the Vercel
+project's Environment Variables, or publishing fails at runtime.
 
 ## Adding articles
 

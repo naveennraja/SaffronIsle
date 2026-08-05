@@ -26,6 +26,10 @@ yarn-error.log*
 # local env files
 .env*.local
 
+# env files staged for import into a hosting provider (contain live secrets)
+*.env
+!.env.local.example
+
 # vercel
 .vercel
 

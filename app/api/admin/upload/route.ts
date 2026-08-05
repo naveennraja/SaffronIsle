@@ -67,12 +67,14 @@ function buildMdx({
   category,
   description,
   date,
+  imageExt,
 }: {
   title: string
   slug: string
   category: string
   description: string
   date: string
+  imageExt: string
 }) {
   return `---
 title: "${title}"
@@ -80,7 +82,7 @@ description: "${description}"
 date: "${date}"
 category: "${category}"
 author: "Nethra Bhaskar"
-coverImage: "/images/articles/${slug}.jpg"
+coverImage: "/images/articles/${slug}.${imageExt}"
 coverAlt: "${title}"
 readTime: 5
 featured: false
@@ -101,8 +103,9 @@ async function pushToGithub({
   const token = process.env.GITHUB_TOKEN
   const repo = process.env.GITHUB_REPO
 
-  if (!token || !repo) {
-    throw new Error('GITHUB_TOKEN or GITHUB_REPO env var missing')
+  const missing = [!token && 'GITHUB_TOKEN', !repo && 'GITHUB_REPO'].filter(Boolean)
+  if (missing.length) {
+    throw new Error(`Missing env var(s) on the server: ${missing.join(', ')}`)
   }
 
   const apiUrl = `https://api.github.com/repos/${repo}/contents/${path}`
@@ -197,7 +200,9 @@ export async function POST(req: NextRequest) {
     const description = extractDescription(markdown) || `${title} — a guide for Indians in Ireland.`
     const date = new Date().toISOString().split('T')[0]
 
-    const frontmatter = buildMdx({ title, slug, category, description, date })
+    const imageExt = image ? (image.name.split('.').pop() ?? 'jpg').toLowerCase() : 'jpg'
+
+    const frontmatter = buildMdx({ title, slug, category, description, date, imageExt })
     const mdxContent = `${frontmatter}\n\n${markdown}\n`
 
     const filePath = `content/articles/${category}/${slug}.mdx`
@@ -209,10 +214,9 @@ export async function POST(req: NextRequest) {
 
     // Upload cover image if provided
     if (image) {
-      const ext = image.name.split('.').pop() ?? 'jpg'
       const imgBuffer = Buffer.from(await image.arrayBuffer())
       await pushToGithub({
-        path: `public/images/articles/${slug}.${ext}`,
+        path: `public/images/articles/${slug}.${imageExt}`,
         content: imgBuffer.toString('base64'),
         message: `image: cover for ${slug}`,
         isBase64: true,
