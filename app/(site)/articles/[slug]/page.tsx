@@ -38,12 +38,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!article) return { title: 'Article not found' }
 
   const url = `${getSiteUrl()}/articles/${article.slug}`
+  // The on-page <h1> always uses `title`; only the search/social title varies.
+  const seoTitle = article.metaTitle || article.title
 
   return {
-    title: article.title,
+    title: seoTitle,
     description: article.description,
     openGraph: {
-      title: article.title,
+      title: seoTitle,
       description: article.description,
       images: [article.coverImage],
       type: 'article',
@@ -52,7 +54,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     },
     twitter: {
       card: 'summary_large_image',
-      title: article.title,
+      title: seoTitle,
       description: article.description,
       images: [article.coverImage],
     },

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { convertDocx } from '@/lib/docx-to-mdx.js'
 import { buildFrontmatter } from '@/lib/frontmatter.js'
 import { isValidCategory, isValidSlug, slugToTitle } from '@/lib/category-slugs.js'
+import { todayInSiteZone } from '@/lib/publish-date.js'
 import {
   PUBLISH_LOG_PATH,
   PUBLISH_LOG_HEADER,
@@ -181,6 +182,8 @@ export async function POST(req: NextRequest) {
   const category = formData.get('category') as string
   const slug = formData.get('slug') as string
   const titleOverride = (formData.get('title') as string) || ''
+  const metaTitle = ((formData.get('metaTitle') as string) || '').trim()
+  const publishDate = ((formData.get('publishDate') as string) || '').trim()
   const file = formData.get('file') as File | null
   const image = formData.get('image') as File | null
 
@@ -198,6 +201,16 @@ export async function POST(req: NextRequest) {
 
   if (!isValidSlug(slug)) {
     return NextResponse.json({ ok: false, error: 'Slug must be lowercase letters, numbers, and hyphens only' }, { status: 400 })
+  }
+
+  // The date is what makes scheduling work, so a malformed one must not reach
+  // the frontmatter: an unparseable date would be treated as published and the
+  // article would appear immediately, which is the opposite of what was asked.
+  if (publishDate && !/^\d{4}-\d{2}-\d{2}$/.test(publishDate)) {
+    return NextResponse.json(
+      { ok: false, error: 'Publish date must be a calendar date (YYYY-MM-DD)' },
+      { status: 400 }
+    )
   }
 
   try {
@@ -231,11 +244,17 @@ export async function POST(req: NextRequest) {
 
     const title = titleOverride || slugToTitle(slug)
     const finalDescription = description || `${title} — a guide for Indians in Ireland.`
-    const date = new Date().toISOString().split('T')[0]
+    // A chosen future date is what schedules the article; blank means now.
+    // todayInSiteZone rather than UTC so a late-evening publish is not stamped
+    // with tomorrow's date and hidden until the next build.
+    const today = todayInSiteZone()
+    const date = publishDate || today
+    const isScheduled = date > today
     const imageExt = image ? (image.name.split('.').pop() ?? 'jpg').toLowerCase() : 'jpg'
 
     const frontmatter = buildFrontmatter({
       title,
+      metaTitle,
       slug,
       category,
       description: finalDescription,
@@ -263,9 +282,18 @@ export async function POST(req: NextRequest) {
 
     const imageCount = images.length
     const summary = imageCount > 0 ? ` (+${imageCount} image${imageCount === 1 ? '' : 's'})` : ''
-    await commitFiles(files, `publish: ${title}${summary}`)
+    // "schedule:" rather than "publish:" so the git log does not claim an
+    // article went live on a day it was only written.
+    const verb = isScheduled ? `schedule (${date})` : 'publish'
+    await commitFiles(files, `${verb}: ${title}${summary}`)
 
-    return NextResponse.json({ ok: true, path: filePath, imageCount, warnings })
+    return NextResponse.json({
+      ok: true,
+      path: filePath,
+      imageCount,
+      warnings,
+      scheduledFor: isScheduled ? date : undefined,
+    })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error'
     return NextResponse.json({ ok: false, error: message }, { status: 500 })

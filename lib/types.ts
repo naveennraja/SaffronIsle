@@ -1,5 +1,11 @@
 export interface ArticleFrontmatter {
   title: string
+  /**
+   * Overrides the <title> tag and OpenGraph title. The on-page heading always
+   * uses `title` — this exists so a search result can read differently from the
+   * article itself, which is usually longer and more keyword-led.
+   */
+  metaTitle?: string
   description: string
   date: string
   lastUpdated?: string

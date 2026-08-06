@@ -123,3 +123,38 @@ describe('buildFrontmatter — values that used to break the build', () => {
     expect(roundTrip({ description: '"' }).data.description).toBe('"')
   })
 })
+
+describe('buildFrontmatter — metaTitle', () => {
+  test('omits the key entirely when no meta title is given', () => {
+    const { data } = roundTrip({})
+
+    // Absent, not "". The reader falls back to `title` on absence, and an
+    // empty string would read as a deliberate (blank) SEO title.
+    expect('metaTitle' in data).toBe(false)
+  })
+
+  test('omits the key when the meta title is blank or whitespace', () => {
+    expect('metaTitle' in roundTrip({ metaTitle: '' }).data).toBe(false)
+    expect('metaTitle' in roundTrip({ metaTitle: '   ' }).data).toBe(false)
+  })
+
+  test('carries the meta title through without touching the article title', () => {
+    const { data } = roundTrip({
+      metaTitle: 'Renting in Dublin: Costs, Deposits & Tenant Rights (2026)',
+    })
+
+    expect(data.metaTitle).toBe(
+      'Renting in Dublin: Costs, Deposits & Tenant Rights (2026)'
+    )
+    expect(data.title).toBe('Renting in Dublin')
+    // coverAlt describes the image, so it tracks the on-page title.
+    expect(data.coverAlt).toBe('Renting in Dublin')
+  })
+
+  test('escapes a meta title containing quotes and colons', () => {
+    const hostile = 'She said "go": a guide — 100% free'
+    const { data } = roundTrip({ metaTitle: hostile })
+
+    expect(data.metaTitle).toBe(hostile)
+  })
+})
