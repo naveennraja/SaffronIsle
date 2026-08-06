@@ -1,8 +1,12 @@
 name: Process draft articles
 
+# Runs at 01:00 UTC — early morning in Ireland year round (01:00 in winter,
+# 02:00 during summer time), so scheduled articles are live before anyone is
+# reading. GitHub's cron is best effort and often runs late under load, which
+# is why scheduling is deliberately date-only rather than time-of-day.
 on:
   schedule:
-    - cron: '0 8 * * *'   # every day at 8am UTC (9am Ireland time)
+    - cron: '0 1 * * *'
   workflow_dispatch:        # lets you trigger it manually from GitHub too
 
 jobs:
@@ -42,3 +46,27 @@ jobs:
           git diff --staged --quiet && echo "Nothing to commit" || \
             git commit -m "auto: publish articles from $(date +'%Y-%m-%d') drafts"
           git push
+
+      # Articles scheduled for today are already committed and simply filtered
+      # out of the build. Nothing about the repo changes when their date
+      # arrives, so a deploy has to be asked for explicitly.
+      - name: Check for articles scheduled for today
+        id: scheduled
+        run: node scripts/check-scheduled.js
+
+      - name: Trigger a rebuild so scheduled articles go live
+        if: steps.scheduled.outputs.due == 'true'
+        env:
+          HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::error::${{ steps.scheduled.outputs.count }} article(s) are due today \
+          (${{ steps.scheduled.outputs.titles }}) but VERCEL_DEPLOY_HOOK_URL is not set, \
+          so they cannot be published. Create a Deploy Hook in Vercel (Settings → Git → \
+          Deploy Hooks) and add it as a repository secret."
+            exit 1
+          fi
+          echo "Publishing: ${{ steps.scheduled.outputs.titles }}"
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$HOOK")
+          echo "Deploy hook responded $code"
+          [ "$code" -ge 200 ] && [ "$code" -lt 300 ]

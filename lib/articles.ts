@@ -4,6 +4,8 @@ import fs from 'fs'
 import path from 'path'
 import matter from 'gray-matter'
 import { getCategorySlugs } from './categories'
+// Plain CommonJS module, shared with the scheduling workflow script
+import { isPublished } from './publish-date.js'
 import { readTime } from './utils'
 import type { Article, ArticleMeta, ArticleFrontmatter } from './types'
 
@@ -104,6 +106,12 @@ function loadAllArticles(): Article[] {
     .map(({ filePath, category, slug }) =>
       parseArticleFile(filePath, category, slug)
     )
+    // Scheduled articles are filtered here, at the single point every reader
+    // goes through, so listings, search, the sitemap and generateStaticParams
+    // all agree. Filtering per-caller would eventually miss one and leave a
+    // scheduled article reachable at its direct URL while hidden everywhere
+    // else — live, but unlinked and unindexed.
+    .filter((article) => isPublished(article.date))
     .sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     )
