@@ -3,7 +3,12 @@
 // All categories, not VISIBLE_CATEGORIES — publishing into an empty category is
 // exactly how it stops being empty.
 import { CATEGORIES } from '@/lib/categories'
-import AdminShell from './AdminShell'
+import AdminShell, {
+  AdminSection,
+  AdminField,
+  inputClass,
+  fileInputClass,
+} from './AdminShell'
 import { useArticleUpload } from './useArticleUpload'
 
 type PublishArticleFormProps = {
@@ -36,195 +41,206 @@ export default function PublishArticleForm({ password }: PublishArticleFormProps
     isLoading,
   } = useArticleUpload(password)
 
+  const metaTooLong = metaTitle.length > 60
+
   return (
-    <AdminShell>
-      <h1 className="mb-1 font-serif text-2xl text-forest">Publish Article</h1>
-      <p className="mb-6 text-sm text-gray-500">Upload a Word doc to publish it as an article</p>
+    <AdminShell maxWidth="xl">
+      <header className="mb-6">
+        <h1 className="font-serif text-2xl text-forest">Publish Article</h1>
+        <p className="mt-1 text-sm text-gray-500">
+          Upload a Word document to publish it as an article
+        </p>
+      </header>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-forest">Category</label>
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="w-full rounded-lg border border-mist px-4 py-2.5 text-sm focus:border-saffron focus:outline-none"
-          >
-            {CATEGORIES.map((c) => (
-              <option key={c.slug} value={c.slug}>{c.label}</option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-forest">
-            Article title <span className="text-gray-400">(optional — auto-generated if blank)</span>
-          </label>
-          <input
-            type="text"
-            placeholder="e.g. How to Get Your IRP Card in Dublin"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full rounded-lg border border-mist px-4 py-2.5 text-sm focus:border-saffron focus:outline-none"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-forest">
-            Meta title{' '}
-            <span className="text-gray-400">
-              (optional — the article title is used if blank)
-            </span>
-          </label>
-          <input
-            type="text"
-            placeholder="e.g. IRP Card Dublin: How to Register (2026 Guide)"
-            value={metaTitle}
-            onChange={(e) => setMetaTitle(e.target.value)}
-            className="w-full rounded-lg border border-mist px-4 py-2.5 text-sm focus:border-saffron focus:outline-none"
-          />
-          <p className="mt-1 text-xs text-gray-400">
-            The headline shown in Google results — a short title, not a sentence.
-            {metaTitle.length > 0 && (
-              <span
-                className={
-                  metaTitle.length > 60 ? 'ml-1 font-medium text-red-500' : 'ml-1'
-                }
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid gap-6 lg:grid-cols-2">
+          <AdminSection title="Article Details">
+            <AdminField label="Category">
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className={inputClass}
               >
-                {metaTitle.length}/60
-                {metaTitle.length > 60 && ' — Google will cut this off'}
-              </span>
-            )}
-          </p>
+                {CATEGORIES.map((c) => (
+                  <option key={c.slug} value={c.slug}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+            </AdminField>
+
+            <AdminField
+              label="Article title"
+              optional="auto-generated from the slug if blank"
+            >
+              <input
+                type="text"
+                placeholder="e.g. How to Get Your IRP Card in Dublin"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className={inputClass}
+              />
+            </AdminField>
+
+            <AdminField
+              label="Meta title"
+              optional="the article title is used if blank"
+              hint={
+                <>
+                  The headline shown in Google results — a short title, not a
+                  sentence.
+                  {metaTitle.length > 0 && (
+                    <span className={metaTooLong ? 'ml-1 font-medium text-red-500' : 'ml-1'}>
+                      {metaTitle.length}/60
+                      {metaTooLong && ' — Google will cut this off'}
+                    </span>
+                  )}
+                </>
+              }
+            >
+              <input
+                type="text"
+                placeholder="e.g. IRP Card Dublin: How to Register (2026 Guide)"
+                value={metaTitle}
+                onChange={(e) => setMetaTitle(e.target.value)}
+                className={inputClass}
+              />
+            </AdminField>
+
+            <AdminField
+              label="URL slug"
+              required
+              hint="Lowercase and hyphens only. This becomes the article URL — and typing an existing one replaces that article."
+            >
+              <input
+                type="text"
+                placeholder="e.g. how-to-get-irp-card"
+                value={slug}
+                onChange={(e) => setSlug(e.target.value)}
+                required
+                className={inputClass}
+              />
+            </AdminField>
+          </AdminSection>
+
+          <AdminSection title="Publishing">
+            <AdminField
+              label="Publish date"
+              optional="publishes now if blank"
+              hint="Pick a future date to write now and publish later. The article goes live in the early hours of that morning, not at an exact time."
+            >
+              <input
+                type="date"
+                value={publishDate}
+                min={today}
+                onChange={(e) => setPublishDate(e.target.value)}
+                className={inputClass}
+              />
+            </AdminField>
+
+            <AdminField label="Word document (.docx)" required>
+              <input
+                type="file"
+                accept=".docx"
+                required
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                className={fileInputClass}
+              />
+              {file && (
+                <p className="mt-1 text-xs text-gray-400">
+                  {file.name} — {(file.size / 1_000_000).toFixed(1)}MB
+                </p>
+              )}
+            </AdminField>
+
+            <AdminField
+              label="Cover image"
+              required={!existing}
+              optional={existing ? 'keeps the current one' : undefined}
+              hint="JPG or PNG, ideally 1200×800"
+            >
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(e) => setCoverImage(e.target.files?.[0] ?? null)}
+                className={fileInputClass}
+              />
+              {imagePreview && (
+                // Deliberately a plain <img>: this is a blob: URL from the file
+                // the user just picked, which next/image cannot optimise or
+                // even load. Nothing is fetched over the network here.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={imagePreview}
+                  alt="Cover preview"
+                  className="mt-3 h-36 w-full rounded-lg object-cover"
+                />
+              )}
+            </AdminField>
+
+            <button
+              type="submit"
+              disabled={isLoading || !canSubmit}
+              className="w-full rounded-lg bg-saffron px-4 py-3 font-semibold text-white hover:bg-saffron-dark disabled:opacity-50"
+            >
+              {isLoading
+                ? existing
+                  ? 'Replacing…'
+                  : 'Publishing…'
+                : existing
+                  ? 'Replace Article'
+                  : 'Publish Article'}
+            </button>
+          </AdminSection>
         </div>
 
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-forest">
-            URL slug <span className="text-red-400">*</span>
-          </label>
-          <input
-            type="text"
-            placeholder="e.g. how-to-get-irp-card"
-            value={slug}
-            onChange={(e) => setSlug(e.target.value)}
-            required
-            className="w-full rounded-lg border border-mist px-4 py-2.5 text-sm focus:border-saffron focus:outline-none"
-          />
-          <p className="mt-1 text-xs text-gray-400">Lowercase, hyphens only. This becomes the article URL.</p>
-
-          {existing && (
-            <div className="mt-2 rounded-lg border border-saffron/40 bg-saffron/10 px-4 py-3 text-sm text-saffron-dark">
-              <p className="font-semibold">
-                This will replace an article that already exists
+        {existing && (
+          <AdminSection title="Replace Existing Article" className="border-saffron/40 bg-saffron/5">
+            <div className="space-y-2 text-sm text-saffron-dark">
+              <p>
+                <strong>“{existing.title}”</strong> already uses this slug, published{' '}
+                {existing.date}. Publishing will replace it.
               </p>
-              <p className="mt-1">
-                “{existing.title}” — published {existing.date}
+              <p className="text-xs">
+                Anything left blank stays as it is — title, meta title, publish
+                date, cover image and category all carry over.
                 {existing.category !== category && (
-                  <> in <strong>{existing.category}</strong>, and will move to{' '}
-                  <strong>{category}</strong></>
+                  <>
+                    {' '}
+                    <strong>
+                      The category has been changed, so this article will move from{' '}
+                      {existing.category} to {category}.
+                    </strong>
+                  </>
                 )}
-                .
-              </p>
-              <p className="mt-1 text-xs">
-                Its original publish date is kept, so it will not jump to the top
-                of the site. The cover image below is optional — leave it empty to
-                keep the current one.
                 {existing.imageCount > 0 &&
-                  ` Pictures the new document no longer uses will be removed.`}
+                  ' Pictures the new document no longer uses will be removed.'}
               </p>
             </div>
-          )}
-        </div>
-
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-forest">
-            Publish date{' '}
-            <span className="text-gray-400">(optional — publishes now if blank)</span>
-          </label>
-          <input
-            type="date"
-            value={publishDate}
-            min={today}
-            onChange={(e) => setPublishDate(e.target.value)}
-            className="w-full rounded-lg border border-mist px-4 py-2.5 text-sm focus:border-saffron focus:outline-none"
-          />
-          <p className="mt-1 text-xs text-gray-400">
-            Pick a future date to write now and publish later. The article goes
-            live in the early hours of that morning, not at an exact time.
-          </p>
-        </div>
-
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-forest">
-            Word document (.docx) <span className="text-red-400">*</span>
-          </label>
-          <input
-            type="file"
-            accept=".docx"
-            required
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            className="w-full rounded-lg border border-mist px-4 py-2.5 text-sm file:mr-3 file:rounded file:border-0 file:bg-saffron/10 file:px-3 file:py-1 file:text-sm file:font-medium file:text-saffron-dark focus:outline-none"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-forest">
-            Cover image{' '}
-            {existing ? (
-              <span className="text-gray-400">(optional — keeps the current one)</span>
-            ) : (
-              <span className="text-red-400">*</span>
-            )}{' '}
-            <span className="text-gray-400">(JPG or PNG, ideally 1200×800)</span>
-          </label>
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            onChange={(e) => setCoverImage(e.target.files?.[0] ?? null)}
-            className="w-full rounded-lg border border-mist px-4 py-2.5 text-sm file:mr-3 file:rounded file:border-0 file:bg-saffron/10 file:px-3 file:py-1 file:text-sm file:font-medium file:text-saffron-dark focus:outline-none"
-          />
-          {imagePreview && (
-            // Deliberately a plain <img>: this is a blob: URL from the file
-            // the user just picked, which next/image cannot optimise or
-            // even load. Nothing is fetched over the network here.
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={imagePreview}
-              alt="Cover preview"
-              className="mt-3 h-36 w-full rounded-lg object-cover"
-            />
-          )}
-        </div>
+          </AdminSection>
+        )}
 
         {message && (
-          <div className={`rounded-lg px-4 py-3 text-sm ${status === 'success' ? 'bg-emerald/10 text-emerald-800' : 'bg-red-50 text-red-700'}`}>
+          <div
+            className={`rounded-2xl px-6 py-4 text-sm ${
+              status === 'success'
+                ? 'bg-emerald/10 text-emerald-800'
+                : 'bg-red-50 text-red-700'
+            }`}
+          >
             {message}
           </div>
         )}
 
         {warnings.length > 0 && (
-          <div className="rounded-lg bg-saffron/10 px-4 py-3 text-sm text-saffron-dark">
-            <p className="mb-1 font-semibold">Worth checking:</p>
-            <ul className="list-disc space-y-1 pl-5">
+          <AdminSection title="Warnings" className="border-saffron/40 bg-saffron/5">
+            <ul className="list-disc space-y-1 pl-5 text-sm text-saffron-dark">
               {warnings.map((w) => (
                 <li key={w}>{w}</li>
               ))}
             </ul>
-          </div>
+          </AdminSection>
         )}
-
-        <button
-          type="submit"
-          disabled={isLoading || !canSubmit}
-          className="w-full rounded-lg bg-saffron px-4 py-3 font-semibold text-white hover:bg-saffron-dark disabled:opacity-50"
-        >
-          {isLoading
-            ? existing
-              ? 'Replacing…'
-              : 'Publishing…'
-            : existing
-              ? 'Replace Article'
-              : 'Publish Article'}
-        </button>
       </form>
     </AdminShell>
   )

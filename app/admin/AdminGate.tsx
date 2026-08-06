@@ -40,6 +40,7 @@ export default function AdminGate() {
   if (!authed) {
     return (
       <AdminShell maxWidth="sm">
+        <div className="rounded-2xl border border-mist/60 bg-white p-8 shadow-soft">
         <h1 className="mb-2 font-serif text-2xl text-forest">Saffron Isle Admin</h1>
         <p className="mb-6 text-sm text-gray-500">Enter your password to continue</p>
         <form onSubmit={handleAuth} className="space-y-4">
@@ -60,6 +61,7 @@ export default function AdminGate() {
             {status === 'auth' ? 'Checking…' : 'Continue'}
           </button>
         </form>
+        </div>
       </AdminShell>
     )
   }
