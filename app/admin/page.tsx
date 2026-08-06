@@ -1,17 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-
-const CATEGORIES = [
-  { value: 'visa', label: 'Visa' },
-  { value: 'student-life', label: 'Student Life' },
-  { value: 'food-groceries', label: 'Food & Groceries' },
-  { value: 'work-careers', label: 'Work & Careers' },
-  { value: 'finances', label: 'Finances' },
-  { value: 'housing', label: 'Housing' },
-  { value: 'explore-ireland', label: 'Explore Ireland' },
-  { value: 'community-stories', label: 'Community Stories' },
-]
+// All categories, not VISIBLE_CATEGORIES — publishing into an empty category is
+// exactly how it stops being empty.
+import { CATEGORIES } from '@/lib/categories'
 
 type Status = 'idle' | 'loading' | 'success' | 'error' | 'auth'
 
@@ -174,7 +166,7 @@ export default function AdminPage() {
               className="w-full rounded-lg border border-mist px-4 py-2.5 text-sm focus:border-saffron focus:outline-none"
             >
               {CATEGORIES.map((c) => (
-                <option key={c.value} value={c.value}>{c.label}</option>
+                <option key={c.slug} value={c.slug}>{c.label}</option>
               ))}
             </select>
           </div>

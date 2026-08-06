@@ -12,43 +12,19 @@
 const fs = require('fs')
 const path = require('path')
 const { convertDocx } = require('../lib/docx-to-mdx.js')
+const { buildFrontmatter } = require('../lib/frontmatter.js')
+const {
+  CATEGORY_SLUGS,
+  isValidCategory,
+  isValidSlug,
+  slugToTitle,
+} = require('../lib/category-slugs.js')
+const { PUBLISH_LOG_HEADER, publishLogRow } = require('../lib/publish-log.js')
 
 const DRAFTS_DIR = path.join(process.cwd(), 'drafts')
 const PROCESSED_DIR = path.join(DRAFTS_DIR, 'processed')
 const CONTENT_DIR = path.join(process.cwd(), 'content', 'articles')
 const PUBLISH_LOG = path.join(process.cwd(), 'drafts', 'publish-log.md')
-
-const VALID_CATEGORIES = [
-  'visa',
-  'student-life',
-  'food-groceries',
-  'work-careers',
-  'finances',
-  'housing',
-  'explore-ireland',
-  'community-stories',
-]
-
-function slugToTitle(slug) {
-  return slug
-    .split('-')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ')
-}
-
-function buildFrontmatter({ title, slug, category, description, date }) {
-  return `---
-title: "${title}"
-description: "${description}"
-date: "${date}"
-category: "${category}"
-author: "Nethra Bhaskar"
-coverImage: "/images/articles/${slug}.jpg"
-coverAlt: "${title}"
-readTime: 5
-featured: false
----`
-}
 
 async function processFile(filePath) {
   const filename = path.basename(filePath, '.docx')
@@ -61,16 +37,14 @@ async function processFile(filePath) {
 
   const [category, slug] = parts
 
-  if (!VALID_CATEGORIES.includes(category)) {
+  if (!isValidCategory(category)) {
     console.error(
-      `❌  "${filename}.docx" — unknown category "${category}"\n   Valid: ${VALID_CATEGORIES.join(', ')}`
+      `❌  "${filename}.docx" — unknown category "${category}"\n   Valid: ${CATEGORY_SLUGS.join(', ')}`
     )
     return null
   }
 
-  // Same rule the web uploader enforces. The slug becomes a path segment for
-  // both the .mdx and the extracted images, so it must not escape its folder.
-  if (!/^[a-z0-9-]+$/.test(slug)) {
+  if (!isValidSlug(slug)) {
     console.error(
       `❌  "${filename}.docx" — slug "${slug}" must be lowercase letters, numbers and hyphens only`
     )
@@ -158,15 +132,20 @@ async function main() {
 
   // Append to publish log
   const today = new Date().toISOString().split('T')[0]
-  const logHeader = !fs.existsSync(PUBLISH_LOG)
-    ? '# Publish Log\n\nAll articles published through the drafts pipeline.\n\n| Date | Title | Category | Slug |\n|---|---|---|---|\n'
-    : ''
+  const logHeader = fs.existsSync(PUBLISH_LOG) ? '' : PUBLISH_LOG_HEADER
 
   const logLines = done
-    .map((a) => `| ${today} | ${slugToTitle(a.slug)} | ${a.category} | ${a.slug} |`)
-    .join('\n')
+    .map((a) =>
+      publishLogRow({
+        date: today,
+        title: slugToTitle(a.slug),
+        category: a.category,
+        slug: a.slug,
+      })
+    )
+    .join('')
 
-  fs.appendFileSync(PUBLISH_LOG, logHeader + logLines + '\n', 'utf-8')
+  fs.appendFileSync(PUBLISH_LOG, logHeader + logLines, 'utf-8')
   console.log(`📋  Logged to drafts/publish-log.md`)
 
   console.log(`\n🎉  ${done.length} article(s) converted and ready.`)

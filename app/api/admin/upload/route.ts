@@ -1,21 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-// Plain CommonJS module, shared with scripts/process-drafts.js
+// Plain CommonJS modules, shared with scripts/process-drafts.js
 import { convertDocx } from '@/lib/docx-to-mdx.js'
+import { buildFrontmatter } from '@/lib/frontmatter.js'
+import { isValidCategory, isValidSlug, slugToTitle } from '@/lib/category-slugs.js'
+import {
+  PUBLISH_LOG_PATH,
+  PUBLISH_LOG_HEADER,
+  publishLogRow,
+} from '@/lib/publish-log.js'
 
 export const runtime = 'nodejs'
 // Blob uploads plus the ref update can outrun the default function timeout.
 export const maxDuration = 60
-
-const VALID_CATEGORIES = [
-  'visa',
-  'student-life',
-  'food-groceries',
-  'work-careers',
-  'finances',
-  'housing',
-  'explore-ireland',
-  'community-stories',
-]
 
 /** Vercel rejects request bodies over ~4.5MB, so cap below that. */
 const MAX_TOTAL_BYTES = 4_000_000
@@ -38,41 +34,6 @@ function checkPassword(password: string): boolean {
   const adminPassword = process.env.ADMIN_PASSWORD
   if (!adminPassword) return false
   return password === adminPassword
-}
-
-function slugToTitle(slug: string): string {
-  return slug
-    .split('-')
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ')
-}
-
-function buildMdx({
-  title,
-  slug,
-  category,
-  description,
-  date,
-  imageExt,
-}: {
-  title: string
-  slug: string
-  category: string
-  description: string
-  date: string
-  imageExt: string
-}) {
-  return `---
-title: "${title}"
-description: "${description}"
-date: "${date}"
-category: "${category}"
-author: "Nethra Bhaskar"
-coverImage: "/images/articles/${slug}.${imageExt}"
-coverAlt: "${title}"
-readTime: 5
-featured: false
----`
 }
 
 function githubEnv() {
@@ -188,11 +149,11 @@ async function commitFiles(files: CommitFile[], message: string) {
 }
 
 async function readPublishLog(): Promise<string> {
-  const existing = await gh('/contents/drafts/publish-log.md')
+  const existing = await gh(`/contents/${PUBLISH_LOG_PATH}`)
   if (existing.ok && typeof existing.data.content === 'string') {
     return Buffer.from(existing.data.content, 'base64').toString('utf-8')
   }
-  return '# Publish Log\n\nAll articles published through the drafts pipeline.\n\n| Date | Title | Category | Slug |\n|---|---|---|---|\n'
+  return PUBLISH_LOG_HEADER
 }
 
 export async function POST(req: NextRequest) {
@@ -231,11 +192,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Missing required fields' }, { status: 400 })
   }
 
-  if (!VALID_CATEGORIES.includes(category)) {
+  if (!isValidCategory(category)) {
     return NextResponse.json({ ok: false, error: `Invalid category: ${category}` }, { status: 400 })
   }
 
-  if (!/^[a-z0-9-]+$/.test(slug)) {
+  if (!isValidSlug(slug)) {
     return NextResponse.json({ ok: false, error: 'Slug must be lowercase letters, numbers, and hyphens only' }, { status: 400 })
   }
 
@@ -273,7 +234,7 @@ export async function POST(req: NextRequest) {
     const date = new Date().toISOString().split('T')[0]
     const imageExt = image ? (image.name.split('.').pop() ?? 'jpg').toLowerCase() : 'jpg'
 
-    const frontmatter = buildMdx({
+    const frontmatter = buildFrontmatter({
       title,
       slug,
       category,
@@ -285,11 +246,11 @@ export async function POST(req: NextRequest) {
     const filePath = `content/articles/${category}/${slug}.mdx`
 
     const existingLog = await readPublishLog()
-    const logLine = `| ${date} | ${title} | ${category} | ${slug} |\n`
+    const logLine = publishLogRow({ date, title, category, slug })
 
     const files: CommitFile[] = [
       { path: filePath, text: mdxContent },
-      { path: 'drafts/publish-log.md', text: existingLog + logLine },
+      { path: PUBLISH_LOG_PATH, text: existingLog + logLine },
       ...images.map((img) => ({ path: img.path, binary: img.buffer })),
     ]
 

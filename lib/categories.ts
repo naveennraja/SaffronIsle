@@ -9,6 +9,8 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react'
+// Plain CommonJS module, shared with scripts/process-drafts.js
+import { CATEGORY_SLUGS } from './category-slugs.js'
 
 export type CategoryColor = 'emerald' | 'saffron' | 'gold' | 'forest' | 'mist'
 
@@ -127,4 +129,20 @@ export function getCategoryBySlug(slug: string): Category | undefined {
 
 export function getCategorySlugs(): string[] {
   return CATEGORIES.map((c) => c.slug)
+}
+
+// Fails fast at import time if CATEGORIES and the shared slug list drift apart.
+// Both publishing paths validate against CATEGORY_SLUGS while lib/articles.ts
+// throws on anything missing from CATEGORIES, so a mismatch means a publish
+// that succeeds and then breaks the next build.
+const declared = new Set(CATEGORIES.map((c) => c.slug))
+const missing = CATEGORY_SLUGS.filter((s) => !declared.has(s))
+const extra = CATEGORIES.map((c) => c.slug).filter(
+  (s) => !CATEGORY_SLUGS.includes(s)
+)
+if (missing.length || extra.length) {
+  throw new Error(
+    'lib/categories.ts and lib/category-slugs.js disagree — ' +
+      `missing from CATEGORIES: [${missing}], not in CATEGORY_SLUGS: [${extra}]`
+  )
 }
