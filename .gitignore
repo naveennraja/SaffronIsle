@@ -30,6 +30,9 @@ yarn-error.log*
 *.env
 !.env.local.example
 
+# personal working notes, not part of the project
+TODO.md
+
 # vercel
 .vercel
 
