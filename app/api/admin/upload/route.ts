@@ -170,6 +170,7 @@ interface ExistingArticle {
   path: string
   category: string
   title: string
+  metaTitle: string
   date: string
   coverImage: string
   /** Paths of body images from this version, so replacements can drop leftovers. */
@@ -222,6 +223,7 @@ async function findExistingArticle(slug: string): Promise<ExistingArticle | null
     path: mdxPath,
     category: mdxPath.split('/')[2],
     title: String(data.title ?? slug),
+    metaTitle: String(data.metaTitle ?? ''),
     date: String(data.date ?? ''),
     coverImage: String(data.coverImage ?? ''),
     imagePaths: paths.filter((p) =>
@@ -353,7 +355,12 @@ export async function POST(req: NextRequest) {
 
     const existing = await findExistingArticle(slug)
 
-    const title = titleOverride || slugToTitle(slug)
+    // Left blank on a replacement, these keep what the article already had,
+    // matching how the date and cover behave. Falling through to the
+    // slug-derived title instead would quietly rename the article — and drop a
+    // meta title she had set — for someone who only meant to fix a sentence.
+    const title = titleOverride || existing?.title || slugToTitle(slug)
+    const finalMetaTitle = metaTitle || existing?.metaTitle || ''
     const finalDescription = description || `${title} — a guide for Indians in Ireland.`
     // A chosen future date is what schedules the article; blank means now.
     // todayInSiteZone rather than UTC so a late-evening publish is not stamped
@@ -382,7 +389,7 @@ export async function POST(req: NextRequest) {
 
     const frontmatter = buildFrontmatter({
       title,
-      metaTitle,
+      metaTitle: finalMetaTitle,
       slug,
       category,
       description: finalDescription,
