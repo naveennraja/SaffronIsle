@@ -70,6 +70,15 @@ export function useArticleUpload(password: string) {
               }
             : null
         )
+        // Follow the article the slug resolved to. The dropdown defaults to
+        // 'visa', so without this, replacing an article without touching the
+        // category silently relocates it — which is how a community story
+        // ended up filed under visa. Changing the dropdown afterwards still
+        // moves it deliberately; this only fires when the slug changes, and a
+        // different slug means a different article.
+        if (data.exists && data.category) {
+          setCategory(data.category)
+        }
       } catch {
         // Never block publishing on a failed lookup — the server checks again
         // and reports what it actually replaced.

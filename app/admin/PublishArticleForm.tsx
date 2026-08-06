@@ -70,15 +70,31 @@ export default function PublishArticleForm({ password }: PublishArticleFormProps
 
         <div>
           <label className="mb-1.5 block text-sm font-medium text-forest">
-            Meta title <span className="text-gray-400">(optional — auto-generated if blank)</span>
+            Meta title{' '}
+            <span className="text-gray-400">
+              (optional — the article title is used if blank)
+            </span>
           </label>
           <input
             type="text"
-            placeholder="e.g. This wil be an article about how to get your IRP Card in Dublin"
+            placeholder="e.g. IRP Card Dublin: How to Register (2026 Guide)"
             value={metaTitle}
             onChange={(e) => setMetaTitle(e.target.value)}
             className="w-full rounded-lg border border-mist px-4 py-2.5 text-sm focus:border-saffron focus:outline-none"
           />
+          <p className="mt-1 text-xs text-gray-400">
+            The headline shown in Google results — a short title, not a sentence.
+            {metaTitle.length > 0 && (
+              <span
+                className={
+                  metaTitle.length > 60 ? 'ml-1 font-medium text-red-500' : 'ml-1'
+                }
+              >
+                {metaTitle.length}/60
+                {metaTitle.length > 60 && ' — Google will cut this off'}
+              </span>
+            )}
+          </p>
         </div>
 
         <div>
