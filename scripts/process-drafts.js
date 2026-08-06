@@ -12,6 +12,7 @@
 const fs = require('fs')
 const path = require('path')
 const { convertDocx } = require('../lib/docx-to-mdx.js')
+const { checkMdx } = require('../lib/mdx-check.js')
 const { buildFrontmatter } = require('../lib/frontmatter.js')
 const {
   CATEGORY_SLUGS,
@@ -69,6 +70,14 @@ async function processFile(filePath) {
     messages.forEach((m) => console.warn(`    ⚠️  ${m.message}`))
   }
   warnings.forEach((w) => console.warn(`    ⚠️  ${w}`))
+
+  // Same gate as the web upload: a body that does not compile must not be
+  // written, or the next build fails and stays failing. See lib/mdx-check.js.
+  const compiled = await checkMdx(markdown)
+  if (!compiled.ok) {
+    console.error(`❌  "${filename}.docx" — ${compiled.error}`)
+    return null
+  }
 
   const title = slugToTitle(slug)
   const finalDescription = description || `${title} — a guide for Indians in Ireland.`

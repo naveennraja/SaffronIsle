@@ -159,6 +159,36 @@ describe('buildFrontmatter — metaTitle', () => {
   })
 })
 
+describe('buildFrontmatter — metaDescription', () => {
+  test('omits the key entirely when none is given', () => {
+    // Absent, not "". The reader falls back to `description` on absence.
+    expect('metaDescription' in roundTrip({}).data).toBe(false)
+  })
+
+  test('omits the key when blank or whitespace', () => {
+    expect('metaDescription' in roundTrip({ metaDescription: '' }).data).toBe(false)
+    expect('metaDescription' in roundTrip({ metaDescription: '  ' }).data).toBe(false)
+  })
+
+  test('carries it through without touching the on-page description', () => {
+    // The two have different jobs: `description` is the standfirst and the card
+    // text, this is the search snippet. Setting one must not disturb the other.
+    const { data } = roundTrip({
+      description: 'What renting in Dublin is really like.',
+      metaDescription:
+        'Average rents by area, what a deposit really costs, and the tenant rights landlords hope you have not read.',
+    })
+
+    expect(data.description).toBe('What renting in Dublin is really like.')
+    expect(data.metaDescription).toMatch(/^Average rents by area/)
+  })
+
+  test('escapes one containing quotes and colons', () => {
+    const hostile = 'She said "go": rents — up 8% in 2026'
+    expect(roundTrip({ metaDescription: hostile }).data.metaDescription).toBe(hostile)
+  })
+})
+
 describe('buildFrontmatter — replacing an existing article', () => {
   test('derives coverImage from the slug when no explicit path is given', () => {
     const { data } = roundTrip({ imageExt: 'png' })

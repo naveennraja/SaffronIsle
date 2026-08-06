@@ -66,10 +66,32 @@ describe('htmlToMarkdown', () => {
     )
   })
 
-  test('decodes the HTML entities Word produces', () => {
+  test('decodes the HTML entities Word produces, keeping < escaped', () => {
+    // Everything decodes except `<`, which would read as the start of a JSX
+    // tag and fail the MDX compile. MDX turns the reference back into `<`.
     expect(
       htmlToMarkdown('<p>&amp; &lt; &gt; &quot; &#39; a&nbsp;b</p>')
-    ).toBe('& < > " \' a b')
+    ).toBe('& &lt; > " \' a b')
+  })
+
+  test('escapes a < that a writer typed, in every shape that breaks MDX', () => {
+    // The three from the TODO: a comparison, something that looks like a tag,
+    // and an abbreviation. All three used to reach the file raw.
+    expect(htmlToMarkdown('<p>Salaries &lt;2000 euro are common.</p>')).toBe(
+      'Salaries &lt;2000 euro are common.'
+    )
+    expect(htmlToMarkdown('<p>Use the &lt;b&gt; tag carefully.</p>')).toBe(
+      'Use the &lt;b> tag carefully.'
+    )
+    expect(htmlToMarkdown('<p>Compare &lt;IRP and PPS numbers.</p>')).toBe(
+      'Compare &lt;IRP and PPS numbers.'
+    )
+  })
+
+  test('decodes each entity in one pass, never producing a raw <', () => {
+    // Six chained replaces decoded &amp; first and &lt; after, so the literal
+    // text "&amp;lt;" came out as the one character that must never be emitted.
+    expect(htmlToMarkdown('<p>&amp;lt; 2000</p>')).not.toContain('< 2000')
   })
 
   test('collapses runs of blank lines and trims the ends', () => {

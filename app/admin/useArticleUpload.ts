@@ -18,6 +18,16 @@ export type ExistingArticle = {
 /** Vercel rejects request bodies over ~4.5MB with an HTML error page. */
 const MAX_UPLOAD_BYTES = 4_000_000
 
+/**
+ * Above this a cover gets a nudge, never a refusal.
+ *
+ * Nothing is resized on the server: Vercel already optimises delivery, so a
+ * large original does not make the page slow. The cost is git history, which
+ * grows by whatever is committed and never shrinks. A note that costs one
+ * sentence is the right size of fix for a problem measured in years.
+ */
+const COVER_WARN_BYTES = 500_000
+
 export function useArticleUpload(password: string) {
   // Computed once per mount. The admin page is short-lived enough that a
   // session spanning midnight is not worth guarding against.
@@ -29,6 +39,7 @@ export function useArticleUpload(password: string) {
   const [slug, setSlug] = useState('')
   const [title, setTitle] = useState('')
   const [metaTitle, setMetaTitle] = useState('')
+  const [metaDescription, setMetaDescription] = useState('')
   // Blank means publish now. A future date means the article commits straight
   // away but stays filtered out of the site until a build runs on that day.
   const [publishDate, setPublishDate] = useState('')
@@ -92,6 +103,13 @@ export function useArticleUpload(password: string) {
     }
   }, [normalisedSlug, password])
 
+  const coverWarning =
+    image && image.size > COVER_WARN_BYTES
+      ? `This cover is ${(image.size / 1_000_000).toFixed(1)}MB. It will publish fine and the ` +
+        `page will not be slow, but every version is kept forever. If it is easy: open it in ` +
+        `Preview → Tools → Adjust Size, set the width to 1200, and save.`
+      : null
+
   function setCoverImage(f: File | null) {
     setImage(f)
     if (f) setImagePreview(URL.createObjectURL(f))
@@ -119,7 +137,15 @@ export function useArticleUpload(password: string) {
     }
 
     setStatus('loading')
-    setMessage('')
+    // Publishing is a commit to the site's repository, and it takes a few
+    // seconds of uploading pictures and pushing before anything comes back.
+    // Saying so beats a silent button: it names what is happening and, if it
+    // fails, makes it obvious that nothing was saved.
+    setMessage(
+      existing
+        ? 'Saving the corrected article to the repository…'
+        : 'Saving the article to the repository…'
+    )
     setWarnings([])
 
     const formData = new FormData()
@@ -128,6 +154,7 @@ export function useArticleUpload(password: string) {
     formData.append('slug', slug.trim().toLowerCase().replace(/\s+/g, '-'))
     formData.append('title', title.trim())
     formData.append('metaTitle', metaTitle.trim())
+    formData.append('metaDescription', metaDescription.trim())
     formData.append('publishDate', publishDate)
     formData.append('password', password)
     if (image) formData.append('image', image)
@@ -165,15 +192,17 @@ export function useArticleUpload(password: string) {
               ? ` ${replaced.removedImages} unused picture${replaced.removedImages === 1 ? ' was' : 's were'} removed.`
               : ''
           setMessage(
-            `"${replaced.title}" was replaced${pictures}${moved}. ` +
-              `Its original publish date was kept.${tidied} Live in ~1 minute.`
+            `"${replaced.title}" was replaced${pictures}${moved} and committed to ` +
+              `the repository. Its original publish date was kept.${tidied} ` +
+              `Live in ~1 minute.`
           )
         } else {
           setMessage(
             scheduled
-              ? `Article saved${pictures}. It stays hidden until ${scheduled}, ` +
-                  `then goes live in the early hours of that morning.`
-              : `Article published${pictures}! It will be live in ~1 minute.`
+              ? `Article committed to the repository${pictures}. It stays hidden ` +
+                  `until ${scheduled}, then goes live in the early hours of that morning.`
+              : `Article published${pictures}! It has been committed to the ` +
+                  `repository and will be live in ~1 minute.`
           )
         }
         setWarnings(data.warnings ?? [])
@@ -185,6 +214,7 @@ export function useArticleUpload(password: string) {
         // Must clear too, or the next article silently inherits this one's
         // meta title — which would be invisible until it reached search results.
         setMetaTitle('')
+        setMetaDescription('')
         setPublishDate('')
       } else {
         setStatus('error')
@@ -203,6 +233,7 @@ export function useArticleUpload(password: string) {
     setFile,
     imagePreview,
     setCoverImage,
+    coverWarning,
     category,
     setCategory,
     slug,
@@ -211,6 +242,8 @@ export function useArticleUpload(password: string) {
     setTitle,
     metaTitle,
     setMetaTitle,
+    metaDescription,
+    setMetaDescription,
     publishDate,
     setPublishDate,
     today,

@@ -21,6 +21,7 @@ export default function PublishArticleForm({ password }: PublishArticleFormProps
     setFile,
     imagePreview,
     setCoverImage,
+    coverWarning,
     category,
     setCategory,
     slug,
@@ -29,6 +30,8 @@ export default function PublishArticleForm({ password }: PublishArticleFormProps
     setTitle,
     metaTitle,
     setMetaTitle,
+    metaDescription,
+    setMetaDescription,
     publishDate,
     setPublishDate,
     today,
@@ -42,6 +45,7 @@ export default function PublishArticleForm({ password }: PublishArticleFormProps
   } = useArticleUpload(password)
 
   const metaTooLong = metaTitle.length > 60
+  const metaDescriptionTooLong = metaDescription.length > 155
 
   return (
     <AdminShell maxWidth="xl">
@@ -108,6 +112,35 @@ export default function PublishArticleForm({ password }: PublishArticleFormProps
             </AdminField>
 
             <AdminField
+              label="Meta description"
+              optional="written from the first paragraph if blank"
+              hint={
+                <>
+                  The sentence under the headline in Google results. Worth
+                  writing: the automatic one just repeats the opening line.
+                  {metaDescription.length > 0 && (
+                    <span
+                      className={
+                        metaDescriptionTooLong ? 'ml-1 font-medium text-red-500' : 'ml-1'
+                      }
+                    >
+                      {metaDescription.length}/155
+                      {metaDescriptionTooLong && ' — Google will cut this off'}
+                    </span>
+                  )}
+                </>
+              }
+            >
+              <textarea
+                rows={3}
+                placeholder="e.g. What the IRP appointment actually costs, what to bring, and how long the card takes to arrive."
+                value={metaDescription}
+                onChange={(e) => setMetaDescription(e.target.value)}
+                className={inputClass}
+              />
+            </AdminField>
+
+            <AdminField
               label="URL slug"
               required
               hint="Lowercase and hyphens only. This becomes the article URL — and typing an existing one replaces that article."
@@ -165,6 +198,9 @@ export default function PublishArticleForm({ password }: PublishArticleFormProps
                 onChange={(e) => setCoverImage(e.target.files?.[0] ?? null)}
                 className={fileInputClass}
               />
+              {coverWarning && (
+                <p className="mt-2 text-xs text-amber-700">{coverWarning}</p>
+              )}
               {imagePreview && (
                 // Deliberately a plain <img>: this is a blob: URL from the file
                 // the user just picked, which next/image cannot optimise or
@@ -202,8 +238,9 @@ export default function PublishArticleForm({ password }: PublishArticleFormProps
                 {existing.date}. Publishing will replace it.
               </p>
               <p className="text-xs">
-                Anything left blank stays as it is — title, meta title, publish
-                date, cover image and category all carry over.
+                Anything left blank stays as it is — title, meta title, meta
+                description, publish date, cover image and category all carry
+                over.
                 {existing.category !== category && (
                   <>
                     {' '}
@@ -222,10 +259,14 @@ export default function PublishArticleForm({ password }: PublishArticleFormProps
 
         {message && (
           <div
+            // Three states, not two: the box now also carries the in-progress
+            // note, and styling that red would say the publish had failed.
             className={`rounded-2xl px-6 py-4 text-sm ${
               status === 'success'
                 ? 'bg-emerald/10 text-emerald-800'
-                : 'bg-red-50 text-red-700'
+                : status === 'loading'
+                  ? 'bg-gray-50 text-gray-600'
+                  : 'bg-red-50 text-red-700'
             }`}
           >
             {message}

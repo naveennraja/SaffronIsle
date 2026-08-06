@@ -40,13 +40,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const url = `${getSiteUrl()}/articles/${article.slug}`
   // The on-page <h1> always uses `title`; only the search/social title varies.
   const seoTitle = article.metaTitle || article.title
+  // Likewise the standfirst and the cards always use `description`.
+  const seoDescription = article.metaDescription || article.description
 
   return {
     title: seoTitle,
-    description: article.description,
+    description: seoDescription,
     openGraph: {
       title: seoTitle,
-      description: article.description,
+      description: seoDescription,
       images: [article.coverImage],
       type: 'article',
       publishedTime: article.date,
@@ -55,7 +57,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     twitter: {
       card: 'summary_large_image',
       title: seoTitle,
-      description: article.description,
+      description: seoDescription,
       images: [article.coverImage],
     },
     alternates: {
@@ -70,7 +72,8 @@ function ArticleJsonLd({ article }: { article: NonNullable<ReturnType<typeof get
     '@context': 'https://schema.org',
     '@type': 'Article',
     headline: article.title,
-    description: article.description,
+    // Search-facing, like the <meta> tags above — not the standfirst.
+    description: article.metaDescription || article.description,
     image: `${getSiteUrl()}${article.coverImage}`,
     datePublished: article.date,
     dateModified: article.lastUpdated ?? article.date,

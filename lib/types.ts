@@ -7,6 +7,13 @@ export interface ArticleFrontmatter {
    */
   metaTitle?: string
   description: string
+  /**
+   * Overrides the search and social description. `description` keeps its other
+   * job — the standfirst under the headline and the text on article cards — so
+   * this exists for when the snippet a searcher should read is not the sentence
+   * that opens the article.
+   */
+  metaDescription?: string
   date: string
   lastUpdated?: string
   category: string

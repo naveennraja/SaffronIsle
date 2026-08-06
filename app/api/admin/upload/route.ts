@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import matter from 'gray-matter'
 // Plain CommonJS modules, shared with scripts/process-drafts.js
 import { convertDocx } from '@/lib/docx-to-mdx.js'
+import { checkMdx } from '@/lib/mdx-check.js'
 import { buildFrontmatter } from '@/lib/frontmatter.js'
 import { isValidCategory, isValidSlug, slugToTitle } from '@/lib/category-slugs.js'
 import { todayInSiteZone } from '@/lib/publish-date.js'
@@ -171,6 +172,7 @@ interface ExistingArticle {
   category: string
   title: string
   metaTitle: string
+  metaDescription: string
   date: string
   coverImage: string
   /** Paths of body images from this version, so replacements can drop leftovers. */
@@ -224,6 +226,7 @@ async function findExistingArticle(slug: string): Promise<ExistingArticle | null
     category: mdxPath.split('/')[2],
     title: String(data.title ?? slug),
     metaTitle: String(data.metaTitle ?? ''),
+    metaDescription: String(data.metaDescription ?? ''),
     date: String(data.date ?? ''),
     coverImage: String(data.coverImage ?? ''),
     imagePaths: paths.filter((p) =>
@@ -294,6 +297,7 @@ export async function POST(req: NextRequest) {
   const slug = formData.get('slug') as string
   const titleOverride = (formData.get('title') as string) || ''
   const metaTitle = ((formData.get('metaTitle') as string) || '').trim()
+  const metaDescription = ((formData.get('metaDescription') as string) || '').trim()
   const publishDate = ((formData.get('publishDate') as string) || '').trim()
   const file = formData.get('file') as File | null
   const image = formData.get('image') as File | null
@@ -338,6 +342,17 @@ export async function POST(req: NextRequest) {
       warnings: string[]
     }
 
+    // Before anything is committed: a body that does not compile would break
+    // the build and keep breaking it for every later article, since the bad
+    // file stays on main. Rejecting here leaves the author in front of the form
+    // with a fixable document. See lib/mdx-check.js.
+    const compiled = (await checkMdx(markdown)) as
+      | { ok: true }
+      | { ok: false; error: string; detail: string }
+    if (!compiled.ok) {
+      return NextResponse.json({ ok: false, error: compiled.error }, { status: 422 })
+    }
+
     const totalImageBytes = images.reduce((sum, img) => sum + img.buffer.length, 0)
     if (totalImageBytes > MAX_TOTAL_BYTES) {
       const mb = (totalImageBytes / 1_000_000).toFixed(1)
@@ -361,6 +376,7 @@ export async function POST(req: NextRequest) {
     // meta title she had set — for someone who only meant to fix a sentence.
     const title = titleOverride || existing?.title || slugToTitle(slug)
     const finalMetaTitle = metaTitle || existing?.metaTitle || ''
+    const finalMetaDescription = metaDescription || existing?.metaDescription || ''
     const finalDescription = description || `${title} — a guide for Indians in Ireland.`
     // A chosen future date is what schedules the article; blank means now.
     // todayInSiteZone rather than UTC so a late-evening publish is not stamped
@@ -390,6 +406,7 @@ export async function POST(req: NextRequest) {
     const frontmatter = buildFrontmatter({
       title,
       metaTitle: finalMetaTitle,
+      metaDescription: finalMetaDescription,
       slug,
       category,
       description: finalDescription,
