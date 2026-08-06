@@ -27,6 +27,7 @@ export default function PublishArticleForm({ password }: PublishArticleFormProps
     publishDate,
     setPublishDate,
     today,
+    existing,
     status,
     message,
     warnings,
@@ -93,6 +94,29 @@ export default function PublishArticleForm({ password }: PublishArticleFormProps
             className="w-full rounded-lg border border-mist px-4 py-2.5 text-sm focus:border-saffron focus:outline-none"
           />
           <p className="mt-1 text-xs text-gray-400">Lowercase, hyphens only. This becomes the article URL.</p>
+
+          {existing && (
+            <div className="mt-2 rounded-lg border border-saffron/40 bg-saffron/10 px-4 py-3 text-sm text-saffron-dark">
+              <p className="font-semibold">
+                This will replace an article that already exists
+              </p>
+              <p className="mt-1">
+                “{existing.title}” — published {existing.date}
+                {existing.category !== category && (
+                  <> in <strong>{existing.category}</strong>, and will move to{' '}
+                  <strong>{category}</strong></>
+                )}
+                .
+              </p>
+              <p className="mt-1 text-xs">
+                Its original publish date is kept, so it will not jump to the top
+                of the site. The cover image below is optional — leave it empty to
+                keep the current one.
+                {existing.imageCount > 0 &&
+                  ` Pictures the new document no longer uses will be removed.`}
+              </p>
+            </div>
+          )}
         </div>
 
         <div>
@@ -128,7 +152,13 @@ export default function PublishArticleForm({ password }: PublishArticleFormProps
 
         <div>
           <label className="mb-1.5 block text-sm font-medium text-forest">
-            Cover image <span className="text-red-400">*</span> <span className="text-gray-400">(JPG or PNG, ideally 1200×800)</span>
+            Cover image{' '}
+            {existing ? (
+              <span className="text-gray-400">(optional — keeps the current one)</span>
+            ) : (
+              <span className="text-red-400">*</span>
+            )}{' '}
+            <span className="text-gray-400">(JPG or PNG, ideally 1200×800)</span>
           </label>
           <input
             type="file"
@@ -171,7 +201,13 @@ export default function PublishArticleForm({ password }: PublishArticleFormProps
           disabled={isLoading || !canSubmit}
           className="w-full rounded-lg bg-saffron px-4 py-3 font-semibold text-white hover:bg-saffron-dark disabled:opacity-50"
         >
-          {isLoading ? 'Publishing…' : 'Publish Article'}
+          {isLoading
+            ? existing
+              ? 'Replacing…'
+              : 'Publishing…'
+            : existing
+              ? 'Replace Article'
+              : 'Publish Article'}
         </button>
       </form>
     </AdminShell>

@@ -1,11 +1,19 @@
 'use client'
 
-import { useState, type SubmitEvent } from 'react'
+import { useEffect, useState, type SubmitEvent } from 'react'
 // Same helper the build-time filter uses, so the date the picker refuses to go
 // below is the same "today" that decides whether an article is live.
 import { todayInSiteZone } from '@/lib/publish-date.js'
 
 export type UploadStatus = 'idle' | 'loading' | 'success' | 'error'
+
+/** An article already published under the slug being typed. */
+export type ExistingArticle = {
+  title: string
+  date: string
+  category: string
+  imageCount: number
+}
 
 /** Vercel rejects request bodies over ~4.5MB with an HTML error page. */
 const MAX_UPLOAD_BYTES = 4_000_000
@@ -27,6 +35,53 @@ export function useArticleUpload(password: string) {
   const [status, setStatus] = useState<UploadStatus>('idle')
   const [message, setMessage] = useState('')
   const [warnings, setWarnings] = useState<string[]>([])
+  const [existing, setExisting] = useState<ExistingArticle | null>(null)
+
+  const normalisedSlug = slug.trim().toLowerCase().replace(/\s+/g, '-')
+
+  // Looks up the typed slug so the author learns they are about to replace an
+  // article *before* they publish, not from the result afterwards. Debounced
+  // because it runs against the GitHub API on every keystroke otherwise.
+  useEffect(() => {
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      // Checked in here rather than in the effect body: setting state
+      // synchronously during an effect cascades an extra render, and React
+      // Compiler rejects it.
+      if (!normalisedSlug) {
+        if (!cancelled) setExisting(null)
+        return
+      }
+      try {
+        const res = await fetch('/api/admin/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ checkSlug: true, password, slug: normalisedSlug }),
+        })
+        const data = await res.json()
+        if (cancelled) return
+        setExisting(
+          data.exists
+            ? {
+                title: data.title,
+                date: data.date,
+                category: data.category,
+                imageCount: data.imageCount ?? 0,
+              }
+            : null
+        )
+      } catch {
+        // Never block publishing on a failed lookup — the server checks again
+        // and reports what it actually replaced.
+        if (!cancelled) setExisting(null)
+      }
+    }, 500)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [normalisedSlug, password])
 
   function setCoverImage(f: File | null) {
     setImage(f)
@@ -36,11 +91,13 @@ export function useArticleUpload(password: string) {
 
   async function handleSubmit(e: SubmitEvent) {
     e.preventDefault()
-    if (!file || !image || !slug.trim()) return
+    // A cover is only mandatory for a new article; replacing one keeps the
+    // cover it already has unless a new file is chosen.
+    if (!file || !slug.trim() || (!image && !existing)) return
 
     // Catch oversize uploads here — Vercel answers them with an HTML error
     // page, which would otherwise surface as a meaningless "Upload failed".
-    const totalBytes = file.size + image.size
+    const totalBytes = file.size + (image?.size ?? 0)
     if (totalBytes > MAX_UPLOAD_BYTES) {
       setStatus('error')
       setWarnings([])
@@ -87,14 +144,29 @@ export function useArticleUpload(password: string) {
         const pictures =
           count > 0 ? ` with ${count} picture${count === 1 ? '' : 's'}` : ''
         const scheduled: string | undefined = data.scheduledFor
+        const replaced = data.replaced as
+          | { title: string; movedFrom?: string; removedImages: number }
+          | undefined
 
         setStatus('success')
-        setMessage(
-          scheduled
-            ? `Article saved${pictures}. It stays hidden until ${scheduled}, ` +
-                `then goes live in the early hours of that morning.`
-            : `Article published${pictures}! It will be live in ~1 minute.`
-        )
+        if (replaced) {
+          const moved = replaced.movedFrom ? ', and moved to its new category' : ''
+          const tidied =
+            replaced.removedImages > 0
+              ? ` ${replaced.removedImages} unused picture${replaced.removedImages === 1 ? ' was' : 's were'} removed.`
+              : ''
+          setMessage(
+            `"${replaced.title}" was replaced${pictures}${moved}. ` +
+              `Its original publish date was kept.${tidied} Live in ~1 minute.`
+          )
+        } else {
+          setMessage(
+            scheduled
+              ? `Article saved${pictures}. It stays hidden until ${scheduled}, ` +
+                  `then goes live in the early hours of that morning.`
+              : `Article published${pictures}! It will be live in ~1 minute.`
+          )
+        }
         setWarnings(data.warnings ?? [])
         setFile(null)
         setImage(null)
@@ -133,11 +205,14 @@ export function useArticleUpload(password: string) {
     publishDate,
     setPublishDate,
     today,
+    // Cleared immediately when the slug is emptied, rather than waiting out the
+    // debounce, so the replace warning cannot linger over a blank field.
+    existing: normalisedSlug ? existing : null,
     status,
     message,
     warnings,
     handleSubmit,
-    canSubmit: Boolean(file && image && slug.trim()),
+    canSubmit: Boolean(file && slug.trim() && (image || existing)),
     isLoading: status === 'loading',
   }
 }

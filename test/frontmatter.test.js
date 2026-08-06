@@ -158,3 +158,30 @@ describe('buildFrontmatter — metaTitle', () => {
     expect(data.metaTitle).toBe(hostile)
   })
 })
+
+describe('buildFrontmatter — replacing an existing article', () => {
+  test('derives coverImage from the slug when no explicit path is given', () => {
+    const { data } = roundTrip({ imageExt: 'png' })
+
+    expect(data.coverImage).toBe('/images/articles/renting-in-dublin.png')
+  })
+
+  test('keeps the existing cover path when one is passed through', () => {
+    // Re-uploading without a new cover must not rename coverImage to a file
+    // that was never uploaded — that would leave the article with a dead image.
+    const { data } = roundTrip({
+      coverImage: '/images/articles/renting-in-dublin.webp',
+    })
+
+    expect(data.coverImage).toBe('/images/articles/renting-in-dublin.webp')
+  })
+
+  test('an explicit cover path wins over the derived extension', () => {
+    const { data } = roundTrip({
+      imageExt: 'jpg',
+      coverImage: '/images/articles/renting-in-dublin.webp',
+    })
+
+    expect(data.coverImage).toBe('/images/articles/renting-in-dublin.webp')
+  })
+})

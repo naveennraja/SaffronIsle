@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import matter from 'gray-matter'
 // Plain CommonJS modules, shared with scripts/process-drafts.js
 import { convertDocx } from '@/lib/docx-to-mdx.js'
 import { buildFrontmatter } from '@/lib/frontmatter.js'
@@ -72,7 +73,13 @@ async function gh(
  * produced N+2 commits (and N+2 deploys), and could leave an article live
  * referencing images whose pushes had failed. This is atomic instead.
  */
-async function commitFiles(files: CommitFile[], message: string) {
+async function commitFiles(
+  files: CommitFile[],
+  message: string,
+  /** Paths to remove in the same commit — images a rewrite orphaned, or an
+   *  article's old location after a category change. */
+  deletions: string[] = []
+) {
   const branch = process.env.GITHUB_BRANCH || 'main'
 
   const ref = await gh(`/git/ref/heads/${branch}`)
@@ -117,6 +124,15 @@ async function commitFiles(files: CommitFile[], message: string) {
         type: 'blob',
         content: f.text as string,
       })),
+    // A null sha against base_tree is how the Git Data API expresses a
+    // deletion, which keeps removals inside the same atomic commit as the
+    // writes rather than needing a second one.
+    ...deletions.map((path) => ({
+      path,
+      mode: '100644',
+      type: 'blob',
+      sha: null,
+    })),
   ]
 
   const newTree = await gh('/git/trees', {
@@ -149,6 +165,71 @@ async function commitFiles(files: CommitFile[], message: string) {
   return commit.data.sha as string
 }
 
+interface ExistingArticle {
+  /** Repo path of the .mdx, e.g. content/articles/visa/irp-guide.mdx */
+  path: string
+  category: string
+  title: string
+  date: string
+  coverImage: string
+  /** Paths of body images from this version, so replacements can drop leftovers. */
+  imagePaths: string[]
+}
+
+/**
+ * Every file currently on the branch, as one recursive tree read.
+ *
+ * One call rather than a probe per category: the answer is needed to decide
+ * whether a slug exists, which cover to keep, and which images the previous
+ * version left behind.
+ */
+async function listRepoPaths(): Promise<string[]> {
+  const branch = process.env.GITHUB_BRANCH || 'main'
+  const ref = await gh(`/git/ref/heads/${branch}`)
+  if (!ref.ok) return []
+  const baseSha = (ref.data.object as { sha: string }).sha
+
+  const tree = await gh(`/git/trees/${baseSha}?recursive=1`)
+  if (!tree.ok) return []
+  return ((tree.data.tree as { path: string; type: string }[]) ?? [])
+    .filter((e) => e.type === 'blob')
+    .map((e) => e.path)
+}
+
+/**
+ * Finds an article by slug across every category.
+ *
+ * Deliberately not scoped to the category being published into. Article URLs
+ * are /articles/<slug> with no category segment, so slugs are globally unique:
+ * publishing 'irp-guide' under housing while it already exists under visa would
+ * create two files claiming one URL, and generateStaticParams would emit a
+ * duplicate route.
+ */
+async function findExistingArticle(slug: string): Promise<ExistingArticle | null> {
+  const paths = await listRepoPaths()
+  const mdxPath = paths.find((p) =>
+    new RegExp(`^content/articles/[^/]+/${slug}\\.mdx$`).test(p)
+  )
+  if (!mdxPath) return null
+
+  const file = await gh(`/contents/${mdxPath}`)
+  if (!file.ok || typeof file.data.content !== 'string') return null
+
+  const raw = Buffer.from(file.data.content, 'base64').toString('utf-8')
+  const { data } = matter(raw)
+
+  return {
+    path: mdxPath,
+    category: mdxPath.split('/')[2],
+    title: String(data.title ?? slug),
+    date: String(data.date ?? ''),
+    coverImage: String(data.coverImage ?? ''),
+    imagePaths: paths.filter((p) =>
+      p.startsWith(`public/images/articles/${slug}/`)
+    ),
+  }
+}
+
 async function readPublishLog(): Promise<string> {
   const existing = await gh(`/contents/${PUBLISH_LOG_PATH}`)
   if (existing.ok && typeof existing.data.content === 'string') {
@@ -169,6 +250,34 @@ export async function POST(req: NextRequest) {
       }
       return NextResponse.json({ ok: false }, { status: 401 })
     }
+
+    // Lets the form tell the author, before they submit, that this slug is
+    // already taken and publishing will replace that article.
+    if (body.checkSlug) {
+      if (!checkPassword(body.password)) {
+        return NextResponse.json({ ok: false }, { status: 401 })
+      }
+      const slug = String(body.slug ?? '').trim()
+      if (!slug || !isValidSlug(slug)) {
+        return NextResponse.json({ ok: true, exists: false })
+      }
+      try {
+        const existing = await findExistingArticle(slug)
+        return NextResponse.json({
+          ok: true,
+          exists: Boolean(existing),
+          title: existing?.title,
+          date: existing?.date,
+          category: existing?.category,
+          imageCount: existing?.imagePaths.length ?? 0,
+        })
+      } catch {
+        // A failed lookup must not block publishing — the POST path checks
+        // again anyway, and reports the replacement in its response.
+        return NextResponse.json({ ok: true, exists: false })
+      }
+    }
+
     return NextResponse.json({ ok: false, error: 'Invalid request' }, { status: 400 })
   }
 
@@ -242,15 +351,34 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    const existing = await findExistingArticle(slug)
+
     const title = titleOverride || slugToTitle(slug)
     const finalDescription = description || `${title} — a guide for Indians in Ireland.`
     // A chosen future date is what schedules the article; blank means now.
     // todayInSiteZone rather than UTC so a late-evening publish is not stamped
     // with tomorrow's date and hidden until the next build.
     const today = todayInSiteZone()
-    const date = publishDate || today
+    // Correcting an article is not republishing it. Without this, fixing a typo
+    // would restamp the date to today and shove the article back to the top of
+    // every listing as though it were new.
+    const date = publishDate || existing?.date || today
     const isScheduled = date > today
+
+    // Re-uploading without a new cover keeps the one already on the article,
+    // so the form can stop demanding a cover just to fix a sentence.
     const imageExt = image ? (image.name.split('.').pop() ?? 'jpg').toLowerCase() : 'jpg'
+    const coverImage =
+      !image && existing?.coverImage
+        ? existing.coverImage
+        : `/images/articles/${slug}.${imageExt}`
+
+    if (!image && !existing) {
+      return NextResponse.json(
+        { ok: false, error: 'A cover image is required for a new article' },
+        { status: 400 }
+      )
+    }
 
     const frontmatter = buildFrontmatter({
       title,
@@ -259,17 +387,13 @@ export async function POST(req: NextRequest) {
       category,
       description: finalDescription,
       date,
-      imageExt,
+      coverImage,
     })
     const mdxContent = `${frontmatter}\n\n${markdown}\n`
     const filePath = `content/articles/${category}/${slug}.mdx`
 
-    const existingLog = await readPublishLog()
-    const logLine = publishLogRow({ date, title, category, slug })
-
     const files: CommitFile[] = [
       { path: filePath, text: mdxContent },
-      { path: PUBLISH_LOG_PATH, text: existingLog + logLine },
       ...images.map((img) => ({ path: img.path, binary: img.buffer })),
     ]
 
@@ -280,12 +404,35 @@ export async function POST(req: NextRequest) {
       })
     }
 
+    // The log records publications, not corrections — a second row for the same
+    // article would read as though it had been published twice.
+    if (!existing) {
+      const existingLog = await readPublishLog()
+      files.push({
+        path: PUBLISH_LOG_PATH,
+        text: existingLog + publishLogRow({ date, title, category, slug }),
+      })
+    }
+
+    // A shorter rewrite leaves the previous version's later images behind,
+    // unreferenced but committed forever. Drop the ones this version did not
+    // rewrite; anything still in use was just overwritten above.
+    const written = new Set(files.map((f) => f.path))
+    const orphans = (existing?.imagePaths ?? []).filter((p) => !written.has(p))
+
+    // Changing category moves the article, so the old file has to go or the
+    // slug would exist twice and generateStaticParams would emit it twice.
+    const moved = existing && existing.path !== filePath ? [existing.path] : []
+
     const imageCount = images.length
     const summary = imageCount > 0 ? ` (+${imageCount} image${imageCount === 1 ? '' : 's'})` : ''
-    // "schedule:" rather than "publish:" so the git log does not claim an
-    // article went live on a day it was only written.
-    const verb = isScheduled ? `schedule (${date})` : 'publish'
-    await commitFiles(files, `${verb}: ${title}${summary}`)
+    // The verb is the git log's only clue as to what actually happened.
+    const verb = existing
+      ? 'update'
+      : isScheduled
+        ? `schedule (${date})`
+        : 'publish'
+    await commitFiles(files, `${verb}: ${title}${summary}`, [...orphans, ...moved])
 
     return NextResponse.json({
       ok: true,
@@ -293,6 +440,9 @@ export async function POST(req: NextRequest) {
       imageCount,
       warnings,
       scheduledFor: isScheduled ? date : undefined,
+      replaced: existing
+        ? { title: existing.title, movedFrom: moved[0], removedImages: orphans.length }
+        : undefined,
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error'
