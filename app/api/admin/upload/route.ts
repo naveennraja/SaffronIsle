@@ -11,6 +11,17 @@ import {
   PUBLISH_LOG_HEADER,
   publishLogRow,
 } from '@/lib/publish-log.js'
+import {
+  SESSION_COOKIE,
+  verifyPassword,
+  createSessionToken,
+  verifySessionToken,
+  checkRateLimit,
+  recordFailure,
+  clearFailures,
+  clientIdFromHeaders,
+  sessionCookieOptions,
+} from '@/lib/admin-auth.js'
 
 export const runtime = 'nodejs'
 // Blob uploads plus the ref update can outrun the default function timeout.
@@ -33,10 +44,52 @@ interface CommitFile {
   binary?: Buffer
 }
 
-function checkPassword(password: string): boolean {
-  const adminPassword = process.env.ADMIN_PASSWORD
-  if (!adminPassword) return false
-  return password === adminPassword
+/** Whether the request carries a valid, unexpired session cookie. */
+function hasSession(req: NextRequest): boolean {
+  return verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value)
+}
+
+const UNAUTHORIZED = () =>
+  NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
+
+/**
+ * Signs in: rate-limited, constant-time, and answered with a session cookie.
+ *
+ * The cookie is the credential from here on. The password is not echoed back
+ * and is never needed again until it expires, so it stops travelling with every
+ * slug lookup and every upload.
+ */
+function signIn(req: NextRequest, password: unknown) {
+  const clientId = clientIdFromHeaders(req.headers)
+
+  const limit = checkRateLimit(clientId)
+  if (!limit.allowed) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: `Too many failed attempts. Try again in about ${Math.ceil(limit.retryAfterSeconds / 60)} minute(s).`,
+      },
+      { status: 429, headers: { 'Retry-After': String(limit.retryAfterSeconds) } }
+    )
+  }
+
+  if (!verifyPassword(password)) {
+    const after = recordFailure(clientId)
+    return NextResponse.json(
+      {
+        ok: false,
+        error: after.allowed
+          ? 'Wrong password'
+          : `Too many failed attempts. Try again in about ${Math.ceil(after.retryAfterSeconds / 60)} minute(s).`,
+      },
+      { status: after.allowed ? 401 : 429 }
+    )
+  }
+
+  clearFailures(clientId)
+  const res = NextResponse.json({ ok: true })
+  res.cookies.set(SESSION_COOKIE, createSessionToken(), sessionCookieOptions())
+  return res
 }
 
 function githubEnv() {
@@ -249,19 +302,30 @@ export async function POST(req: NextRequest) {
   // Auth check (JSON body with checkAuth: true)
   if (contentType.includes('application/json')) {
     const body = await req.json()
+
+    // Signing in with a password, or — with no password — asking whether the
+    // cookie already in hand is still good, which is what lets a page reload
+    // resume a session instead of prompting again.
     if (body.checkAuth) {
-      if (checkPassword(body.password)) {
-        return NextResponse.json({ ok: true })
+      if (body.password === undefined) {
+        return hasSession(req) ? NextResponse.json({ ok: true }) : UNAUTHORIZED()
       }
-      return NextResponse.json({ ok: false }, { status: 401 })
+      return signIn(req, body.password)
+    }
+
+    // Ends the session by clearing the cookie. Nothing can revoke the token
+    // server-side, so this is what "sign out" means: the browser stops holding
+    // a credential, and the token expires on its own within hours.
+    if (body.signOut) {
+      const res = NextResponse.json({ ok: true })
+      res.cookies.set(SESSION_COOKIE, '', sessionCookieOptions(0))
+      return res
     }
 
     // Lets the form tell the author, before they submit, that this slug is
     // already taken and publishing will replace that article.
     if (body.checkSlug) {
-      if (!checkPassword(body.password)) {
-        return NextResponse.json({ ok: false }, { status: 401 })
-      }
+      if (!hasSession(req)) return UNAUTHORIZED()
       const slug = String(body.slug ?? '').trim()
       if (!slug || !isValidSlug(slug)) {
         return NextResponse.json({ ok: true, exists: false })
@@ -291,8 +355,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Invalid content type' }, { status: 400 })
   }
 
+  // Checked before the body is read: an unauthenticated request should not get
+  // as far as buffering a multi-megabyte upload.
+  if (!hasSession(req)) return UNAUTHORIZED()
+
   const formData = await req.formData()
-  const password = formData.get('password') as string
   const category = formData.get('category') as string
   const slug = formData.get('slug') as string
   const titleOverride = (formData.get('title') as string) || ''
@@ -301,10 +368,6 @@ export async function POST(req: NextRequest) {
   const publishDate = ((formData.get('publishDate') as string) || '').trim()
   const file = formData.get('file') as File | null
   const image = formData.get('image') as File | null
-
-  if (!checkPassword(password)) {
-    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
-  }
 
   if (!file || !category || !slug) {
     return NextResponse.json({ ok: false, error: 'Missing required fields' }, { status: 400 })

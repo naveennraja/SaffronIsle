@@ -28,7 +28,12 @@ const MAX_UPLOAD_BYTES = 4_000_000
  */
 const COVER_WARN_BYTES = 500_000
 
-export function useArticleUpload(password: string) {
+/**
+ * No credential is passed in or held here: the session cookie set at sign-in
+ * travels with these requests automatically, and it is httpOnly, so this code
+ * could not read it even if it wanted to.
+ */
+export function useArticleUpload() {
   // Computed once per mount. The admin page is short-lived enough that a
   // session spanning midnight is not worth guarding against.
   const [today] = useState(() => todayInSiteZone())
@@ -67,7 +72,7 @@ export function useArticleUpload(password: string) {
         const res = await fetch('/api/admin/upload', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ checkSlug: true, password, slug: normalisedSlug }),
+          body: JSON.stringify({ checkSlug: true, slug: normalisedSlug }),
         })
         const data = await res.json()
         if (cancelled) return
@@ -101,7 +106,7 @@ export function useArticleUpload(password: string) {
       cancelled = true
       clearTimeout(timer)
     }
-  }, [normalisedSlug, password])
+  }, [normalisedSlug])
 
   const coverWarning =
     image && image.size > COVER_WARN_BYTES
@@ -156,11 +161,20 @@ export function useArticleUpload(password: string) {
     formData.append('metaTitle', metaTitle.trim())
     formData.append('metaDescription', metaDescription.trim())
     formData.append('publishDate', publishDate)
-    formData.append('password', password)
     if (image) formData.append('image', image)
 
     try {
       const res = await fetch('/api/admin/upload', { method: 'POST', body: formData })
+
+      // Sessions last hours, so an expired one is most likely to surface here,
+      // after the document was chosen and the button pressed. Say what
+      // happened, since "Unauthorized" would read as though the article was
+      // rejected rather than the sign-in having lapsed.
+      if (res.status === 401) {
+        setStatus('error')
+        setMessage('Your session has expired. Reload the page, sign in again, and republish — nothing was saved.')
+        return
+      }
 
       // A 413 from the platform comes back as HTML, not JSON — read it before
       // res.json() throws and hides the real reason.
