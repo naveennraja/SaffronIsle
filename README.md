@@ -90,6 +90,39 @@ The third is the one worth dwelling on. `lib/articles.ts` throws on an unknown c
 per-file recovery, so a disagreement between two copies of a list doesn't degrade — it takes the site
 down, one publish later, in a way the author has no way to attribute to what they just did.
 
+### The password guards a write-scoped token, so it is not just a password
+
+`/api/admin/upload` holds a GitHub PAT that can commit to `main`. Whatever sits in front of it is the
+only thing between the open internet and this repository — so a shared password compared with `===`,
+resent on every request, guessable as fast as the network allows, was the highest-risk surface in the
+project. [`lib/admin-auth.js`](lib/admin-auth.js) replaces it. Three decisions in it are worth the
+detour:
+
+**Both sides are hashed before the constant-time compare.** The obvious implementation passes the two
+strings straight to `crypto.timingSafeEqual`, which throws on a length mismatch — and catching that
+throw leaks the password's length to anyone willing to submit strings of increasing size. SHA-256
+digests are always 32 bytes, so every wrong password takes the same branch in the same time,
+regardless of what was submitted.
+
+**The session is signed, not stored.** This deploys to serverless functions with no shared memory and
+no database, so a session table would not survive between requests. Instead the cookie holds
+`<expiry>.<nonce>.<hmac>`, and the expiry lives *inside* the signed payload — editing the cookie to
+extend it invalidates the signature. Verification checks the signature before the expiry, so a forged
+token and a genuinely expired one are indistinguishable from outside.
+
+**The signing key derives from the password.** A consequence rather than a feature: changing
+`ADMIN_PASSWORD` changes the key, which invalidates every outstanding session. That is exactly the
+behaviour a password change should have, and it costs no revocation machinery. `ADMIN_SESSION_SECRET`
+decouples the two if sessions should survive a rotation.
+
+Rate limiting is five failures per address inside fifteen minutes, then a fifteen-minute lockout
+returned as `429` with `Retry-After`. The counter is in-process, so it is per warm instance rather
+than global — stated as a limitation below, because it is one.
+
+The password now travels exactly once. Slug lookups and uploads carry no credential at all, and the
+upload path checks the session *before* reading the multipart body, so an unauthenticated request
+cannot make the server buffer four megabytes of anything.
+
 ### Errors are written for the person who hit them
 
 The author cannot read a stack trace and cannot fix the code. So a picture Word saved as EMF produces:
@@ -106,7 +139,7 @@ explains who it affects. Every warning names a next action.
 npm test
 ```
 
-47 tests, ~400ms, no checked-in binary fixtures.
+107 tests, no checked-in binary fixtures.
 
 [`test/helpers/docx.js`](test/helpers/docx.js) builds real OOXML packages and real PNG bytes in memory,
 so mammoth and `image-size` run their genuine parsers rather than stubs. A test declares the document
@@ -134,20 +167,24 @@ Stated plainly, because they're deliberate trade-offs rather than oversights:
 
 - **`htmlToMarkdown` is a regex chain, not a parser.** It handles what Word actually emits for this
   author's documents. **Tables are not supported at all** — a table in a `.docx` will not survive.
-- **Admin auth is a single shared password**, compared with `===`, with no rate limiting and no
-  session. It guards a write-scoped GitHub token, which makes it the highest-risk surface here.
-  Hardening it is the next task.
+- **Admin auth is still a single shared password** — one secret, no accounts, no second factor. The
+  handling around it is hardened (above), but the credential itself is as strong as the password
+  chosen for it.
+- **Rate limiting is per serverless instance, not global.** The counter lives in process memory, so
+  an attacker spread across many warm instances gets more attempts than the stated five. It converts
+  unlimited online guessing into a handful of tries per instance without adding a datastore; a shared
+  store is the upgrade if it ever needs to be exact.
 - **One unparseable article still fails the whole build.** The likeliest causes are fixed, but the
   amplifier remains. Failing loudly at build time is arguably correct — it just hasn't been decided
   deliberately yet.
-- **Tests cover the conversion and frontmatter layers only.** Routes and components are untested.
+- **Tests cover the conversion, frontmatter, scheduling and auth layers only.** The auth *module* is
+  covered in depth; the route wiring around it, and the components, are not.
 
 ## Stack
 
 Next.js 16 (App Router, React 19) · TypeScript · Tailwind CSS v3 · MDX via `next-mdx-remote/rsc` ·
 `mammoth` for `.docx` · Vitest · deployed on Vercel.
 
-Roughly 4,400 lines across 28 components, 8 categories and 10 articles.
 
 ## Development
 
@@ -184,7 +221,8 @@ npm run dev
 | Variable | Description |
 |---|---|
 | `NEXT_PUBLIC_SITE_URL` | Canonical site URL (e.g. `https://saffronisle.com`) |
-| `ADMIN_PASSWORD` | Password for the `/admin` publishing page |
+| `ADMIN_PASSWORD` | Password for the `/admin` publishing page. Changing it signs out every open session |
+| `ADMIN_SESSION_SECRET` | *Optional.* Signing key for session cookies. Set it to keep sessions alive across an `ADMIN_PASSWORD` change |
 | `GITHUB_TOKEN` | GitHub PAT with `contents: write` — `/admin` commits articles through it |
 | `GITHUB_REPO` | Target repo, e.g. `naveennraja/SaffronIsle` |
 | `GITHUB_BRANCH` | Branch to commit to (defaults to `main`) |
