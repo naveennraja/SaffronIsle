@@ -1,24 +1,16 @@
-import { Navbar } from '@/components/layout/Navbar'
-import { Footer } from '@/components/layout/Footer'
 import { NotFoundContent } from '@/components/layout/NotFoundContent'
 
 /**
  * Catches notFound() thrown inside the public site — an unknown article or
  * category slug.
  *
- * Renders the chrome itself rather than inheriting it. A not-found boundary
- * replaces the segment *and* the layouts above it, so this does not sit inside
- * app/(site)/layout.tsx and would otherwise show a bare page with no navigation.
- * Verified: no duplicate navbar or footer in the output.
+ * Renders no chrome of its own: this sits inside app/(site)/layout.tsx, which
+ * already supplies the navbar, <main> and footer. Adding them here shipped a
+ * 404 with two of each.
+ *
+ * The root app/not-found.tsx is the opposite case — it sits above this group,
+ * inherits nothing, and so renders its own.
  */
 export default function SiteNotFound() {
-  return (
-    <>
-      <Navbar />
-      <main>
-        <NotFoundContent />
-      </main>
-      <Footer />
-    </>
-  )
+  return <NotFoundContent />
 }
