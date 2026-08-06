@@ -8,7 +8,7 @@ import { FeaturedArticles } from '@/components/home/FeaturedArticles'
 import { CategoryGrid } from '@/components/home/CategoryGrid'
 import { RecentArticlesSection } from '@/components/home/RecentArticlesSection'
 import { CommunityStrip } from '@/components/home/CommunityStrip'
-import { NewsletterBanner } from '@/components/home/NewsletterBanner'
+import { NewsletterBanner } from '@/components/ui/NewsletterBanner'
 import { NEWSLETTER_ENABLED } from '@/lib/site-config'
 
 export default function HomePage() {

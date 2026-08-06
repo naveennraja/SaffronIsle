@@ -12,7 +12,7 @@ import { extractTocFromMdx } from '@/lib/toc'
 import { ArticleHeader } from '@/components/articles/ArticleHeader'
 import { ArticleBody } from '@/components/articles/ArticleBody'
 import { TableOfContents } from '@/components/articles/TableOfContents'
-import { NewsletterBanner } from '@/components/home/NewsletterBanner'
+import { NewsletterBanner } from '@/components/ui/NewsletterBanner'
 import { NEWSLETTER_ENABLED } from '@/lib/site-config'
 import { formatDate } from '@/lib/utils'
 

@@ -1,30 +1,25 @@
-import Link from 'next/link'
-import { Button } from '@/components/ui/Button'
+import { Navbar } from '@/components/layout/Navbar'
+import { Footer } from '@/components/layout/Footer'
+import { NotFoundContent } from '@/components/layout/NotFoundContent'
 
+/**
+ * The 404 page, for both unmatched URLs and notFound() thrown inside the site.
+ *
+ * It renders the navbar and footer itself rather than inheriting them. Chrome
+ * lives in app/(site)/layout.tsx so that /admin does not get it, but this file
+ * sits above that group — and an `app/(site)/not-found.tsx` does not pick the
+ * group layout up either (verified: notFound() from an unknown article slug
+ * still resolved to the root boundary). Without these two imports a visitor who
+ * mistypes a URL lands on a page with no way to navigate anywhere.
+ */
 export default function NotFound() {
   return (
-    <div className="mx-auto flex min-h-[70vh] max-w-lg flex-col items-center justify-center px-4 py-16 text-center">
-      <p className="mb-1 font-serif text-[7rem] font-bold leading-none text-mist">
-        404
-      </p>
-      <p className="mb-2 text-label font-semibold uppercase tracking-widest text-saffron-dark">
-        Page not found
-      </p>
-      <h1 className="mb-4 font-serif text-h2 text-forest">
-        We lost this one in the fog
-      </h1>
-      <p className="mb-8 leading-relaxed text-gray-500">
-        The page you are looking for might have moved or does not exist yet.
-      </p>
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <Button href="/">Back to home</Button>
-        <Button href="/articles" variant="outline">
-          Browse articles
-        </Button>
-      </div>
-      <Link href="/search" className="mt-6 text-small">
-        Try searching instead
-      </Link>
-    </div>
+    <>
+      <Navbar />
+      <main>
+        <NotFoundContent />
+      </main>
+      <Footer />
+    </>
   )
 }

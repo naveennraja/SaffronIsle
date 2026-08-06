@@ -1,8 +1,6 @@
 import type { Metadata } from 'next'
 import { Inter, Lora } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/react'
-import { Navbar } from '@/components/layout/Navbar'
-import { Footer } from '@/components/layout/Footer'
 import { SITE } from '@/lib/site-config'
 import { getSiteUrl } from '@/lib/utils'
 import './globals.css'
@@ -51,10 +49,10 @@ export default function RootLayout({
       data-scroll-behavior="smooth"
       className={`${inter.variable} ${lora.variable}`}
     >
+      {/* Navbar and Footer live in app/(site)/layout.tsx, not here, so that
+          /admin renders without the public site's chrome. */}
       <body>
-        <Navbar />
-        <main>{children}</main>
-        <Footer />
+        {children}
         <Analytics />
       </body>
     </html>
