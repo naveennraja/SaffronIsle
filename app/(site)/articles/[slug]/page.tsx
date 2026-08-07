@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import dynamic from 'next/dynamic'
 import {
   getAllArticleSlugs,
   getArticleBySlug,
@@ -12,17 +11,10 @@ import { extractTocFromMdx } from '@/lib/toc'
 import { ArticleHeader } from '@/components/articles/ArticleHeader'
 import { ArticleBody } from '@/components/articles/ArticleBody'
 import { TableOfContents } from '@/components/articles/TableOfContents'
+import { RelatedArticles } from '@/components/articles/RelatedArticles'
 import { NewsletterBanner } from '@/components/ui/NewsletterBanner'
 import { NEWSLETTER_ENABLED } from '@/lib/site-config'
 import { formatDate } from '@/lib/utils'
-
-const RelatedArticles = dynamic(
-  () =>
-    import('@/components/articles/RelatedArticles').then((m) => ({
-      default: m.RelatedArticles,
-    })),
-  { ssr: true }
-)
 
 interface PageProps {
   params: Promise<{ slug: string }>

@@ -171,8 +171,3 @@ export function getAllArticleSlugs(): string[] {
 export function getArticleCountByCategory(category: string): number {
   return getArticlesByCategory(category).length
 }
-
-/** Clear cache in dev when content changes */
-export function clearArticleCache(): void {
-  cache = null
-}
