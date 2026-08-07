@@ -395,6 +395,77 @@ describe('convertDocx — description', () => {
   })
 })
 
+describe('convertDocx — tables', () => {
+  test('renders a table as GFM markdown with the first row as header', async () => {
+    const buffer = await buildDocx([
+      {
+        table: [
+          ['Country', 'Visa'],
+          ['India', 'Stamp 2'],
+        ],
+      },
+    ])
+
+    const { markdown } = await convertDocx({ buffer, slug: 'table' })
+
+    expect(markdown).toBe(
+      '| Country | Visa |\n| --- | --- |\n| India | Stamp 2 |'
+    )
+  })
+
+  test('surrounds the table with blank lines and keeps surrounding prose', async () => {
+    const buffer = await buildDocx([
+      { text: 'Before.' },
+      { table: [['a', 'b'], ['c', 'd']] },
+      { text: 'After.' },
+    ])
+
+    const { markdown } = await convertDocx({ buffer, slug: 'table-prose' })
+
+    expect(markdown).toBe(
+      'Before.\n\n| a | b |\n| --- | --- |\n| c | d |\n\nAfter.'
+    )
+  })
+
+  test('pads ragged rows to the widest row', async () => {
+    const buffer = await buildDocx([
+      { table: [['a', 'b', 'c'], ['d']] },
+    ])
+
+    const { markdown } = await convertDocx({ buffer, slug: 'ragged' })
+
+    expect(markdown).toBe('| a | b | c |\n| --- | --- | --- |\n| d |  |  |')
+  })
+
+  test('escapes a pipe typed inside a cell', async () => {
+    const buffer = await buildDocx([{ table: [['a | b', 'c']] }])
+
+    const { markdown } = await convertDocx({ buffer, slug: 'pipe' })
+
+    expect(markdown).toContain('a \\| b')
+  })
+
+  test('resolves an image inside a table cell to an ArticleImage tag', async () => {
+    const buffer = await buildDocx([
+      {
+        table: [
+          ['Header', 'Photo'],
+          ['A row', { image: photo('In a cell') }],
+        ],
+      },
+    ])
+
+    const { markdown, images } = await convertDocx({ buffer, slug: 'table-img' })
+
+    expect(images).toHaveLength(1)
+    expect(markdown).toContain(
+      '<ArticleImage src="/images/articles/table-img/01.png" alt="In a cell" width="400" height="300" />'
+    )
+    expect(markdown).not.toContain('@@SI_IMG')
+    expect(markdown).not.toContain('@@SI_TBL')
+  })
+})
+
 describe('buildWarnings — wording', () => {
   test('reads correctly for one picture and for several', async () => {
     const one = await buildDocx([

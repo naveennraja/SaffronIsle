@@ -19,9 +19,9 @@ export default function HomePage() {
   return (
     <>
       <HeroSection />
+      <RecentArticlesSection articles={recent} />
       <FeaturedArticles articles={featured} />
       <CategoryGrid />
-      <RecentArticlesSection articles={recent} />
       <CommunityStrip stories={communityStories} />
       {NEWSLETTER_ENABLED && <NewsletterBanner />}
     </>

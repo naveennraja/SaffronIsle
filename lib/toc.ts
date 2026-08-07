@@ -74,6 +74,7 @@ export function extractTocFromMdx(content: string): TocItem[] {
   for (const match of content.matchAll(HEADING)) {
     const level = match[1].length as 2 | 3
     const text = headingText(match[2])
+    if (!text) continue
     items.push({ id: slugifyHeading(text), text, level })
   }
 

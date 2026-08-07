@@ -122,6 +122,8 @@ function drawingRun({ relId, alt, id }) {
  *   {image: {...}, href: 'https://x.com'}    a hyperlinked picture
  *   {image: {...}, list: true}               a picture inside a bullet item
  *   {text: 'hello', list: true}              a bullet item
+ *   {table: [['a', 'b'], ['c', {image: {...}}]]}   a table; cells are strings
+ *                                                   or {image: {...}}
  *
  * @param {Array<Record<string, any>>} blocks
  * @returns {Promise<Buffer>}
@@ -137,7 +139,39 @@ async function buildDocx(blocks) {
   let mediaCount = 0
   let drawingId = 0
 
+  /** @param {{bytes: Buffer, ext?: string, alt?: string}} image */
+  function addImage(image) {
+    mediaCount += 1
+    relCount += 1
+    const relId = `rId${relCount}`
+    const ext = image.ext || 'png'
+    const name = `image${mediaCount}.${ext}`
+
+    extensions.add(ext)
+    zip.file(`word/media/${name}`, image.bytes)
+    rels.push(
+      `<Relationship Id="${relId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/${name}"/>`
+    )
+
+    drawingId += 1
+    return drawingRun({ relId, alt: image.alt, id: drawingId })
+  }
+
   const paragraphs = blocks.map((block) => {
+    if (block.table) {
+      const rows = block.table.map((/** @type {any[]} */ row) => {
+        const cells = row.map((/** @type {any} */ cell) => {
+          const content =
+            cell && typeof cell === 'object' && cell.image
+              ? addImage(cell.image)
+              : `<w:r><w:t xml:space="preserve">${xmlEscape(String(cell ?? ''))}</w:t></w:r>`
+          return `<w:tc><w:tcPr/><w:p>${content}</w:p></w:tc>`
+        })
+        return `<w:tr>${cells.join('')}</w:tr>`
+      })
+      return `<w:tbl><w:tblPr/><w:tblGrid/>${rows.join('')}</w:tbl>`
+    }
+
     const numbering = block.list
       ? '<w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr>'
       : ''
@@ -146,20 +180,7 @@ async function buildDocx(blocks) {
     let content
 
     if (block.image) {
-      mediaCount += 1
-      relCount += 1
-      const relId = `rId${relCount}`
-      const ext = block.image.ext || 'png'
-      const name = `image${mediaCount}.${ext}`
-
-      extensions.add(ext)
-      zip.file(`word/media/${name}`, block.image.bytes)
-      rels.push(
-        `<Relationship Id="${relId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/${name}"/>`
-      )
-
-      drawingId += 1
-      content = drawingRun({ relId, alt: block.image.alt, id: drawingId })
+      content = addImage(block.image)
     } else {
       content = `<w:r><w:t xml:space="preserve">${xmlEscape(block.text || '')}</w:t></w:r>`
     }
