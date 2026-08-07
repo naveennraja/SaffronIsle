@@ -72,11 +72,11 @@ The GitHub Contents API writes a single file per call. Publishing an article wit
 five sequential commits — five Vercel deploys — and a real window where the article was live on a
 deploy whose image pushes hadn't landed yet.
 
-[`commitFiles()`](app/api/admin/upload/route.ts) uses the Git Data API instead: upload blobs, build one
+[`commitFiles()`](lib/github-repo.ts) uses the Git Data API instead: upload blobs, build one
 tree, create one commit, then move the ref. One deploy, and no partial state. A `422` on the ref
 update means someone published concurrently, and says so in words the author can act on.
 
-### Three bugs that were all the same bug
+### Four bugs that were all the same bug
 
 Duplicated logic caused every one of them. Each fix was consolidation, not a patch:
 
@@ -85,6 +85,7 @@ Duplicated logic caused every one of them. Each fix was consolidation, not a pat
 | [`lib/docx-to-mdx.js`](lib/docx-to-mdx.js) | The whole conversion | Web and cron paths could produce different MDX from one document |
 | [`lib/frontmatter.js`](lib/frontmatter.js) | Frontmatter construction | Author input interpolated raw into YAML — one straight quote produced an unparseable article, and **failed the entire build** |
 | [`lib/category-slugs.js`](lib/category-slugs.js) | The category list | A slug the writer accepted but the reader rejected meant a successful publish followed by a dead deploy, with nothing connecting the two |
+| [`lib/toc.ts`](lib/toc.ts) | The heading slug algorithm | Three copies, one drifted: `children.join('')` stringified React elements, so every formatted heading rendered `id="object-object"` — a whole article's contents list linking nowhere, and ~20 elements sharing one id |
 
 The third is the one worth dwelling on. `lib/articles.ts` throws on an unknown category and has no
 per-file recovery, so a disagreement between two copies of a list doesn't degrade — it takes the site
