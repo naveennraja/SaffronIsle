@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { isValidSlug } from '@/lib/category-slugs.js'
+import { UPLOAD_FIELDS } from '@/lib/upload-fields'
 import { hasSession, unauthorized, signIn, signOut } from '@/lib/admin-session'
 import { findExistingArticle } from '@/lib/github-repo'
 import { publishArticle, PublishError } from '@/lib/publish-article'
@@ -62,8 +63,13 @@ async function handleJson(req: NextRequest) {
 /** Reads the submitted form into the shape publishArticle expects. */
 async function handleUpload(req: NextRequest) {
   const formData = await req.formData()
-  const file = formData.get('file') as File | null
-  const image = formData.get('image') as File | null
+  const file = formData.get(UPLOAD_FIELDS.file) as File | null
+  const image = formData.get(UPLOAD_FIELDS.image) as File | null
+
+  // Every text field is trimmed here, without exception. `title` used to be
+  // read raw, so it was clean only because the form happened to trim it before
+  // sending — a request from anywhere else put leading whitespace straight into
+  // the frontmatter. Normalising input is the receiver's job.
   const text = (name: string) => ((formData.get(name) as string) || '').trim()
 
   if (!file) {
@@ -75,12 +81,12 @@ async function handleUpload(req: NextRequest) {
 
   const result = await publishArticle({
     document: Buffer.from(await file.arrayBuffer()),
-    category: text('category'),
-    slug: text('slug'),
-    title: (formData.get('title') as string) || '',
-    metaTitle: text('metaTitle'),
-    metaDescription: text('metaDescription'),
-    publishDate: text('publishDate'),
+    category: text(UPLOAD_FIELDS.category),
+    slug: text(UPLOAD_FIELDS.slug),
+    title: text(UPLOAD_FIELDS.title),
+    metaTitle: text(UPLOAD_FIELDS.metaTitle),
+    metaDescription: text(UPLOAD_FIELDS.metaDescription),
+    publishDate: text(UPLOAD_FIELDS.publishDate),
     cover: image
       ? {
           extension: (image.name.split('.').pop() ?? 'jpg').toLowerCase(),
