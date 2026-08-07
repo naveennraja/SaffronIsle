@@ -90,9 +90,14 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true })
   } catch (err) {
+    // The detail stays in the log. It used to be returned to the browser, which
+    // meant raw Brevo and Mailchimp error bodies — their wording, their field
+    // names, and confirmation of which provider is behind the form — were
+    // readable by anyone posting to this endpoint. None of it helps a visitor
+    // who only wants to know whether they are subscribed.
     console.error('Newsletter error:', err)
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Subscription failed' },
+      { error: 'Could not sign you up just now — please try again shortly.' },
       { status: 500 }
     )
   }
