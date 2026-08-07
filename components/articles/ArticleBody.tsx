@@ -1,4 +1,5 @@
 import { MDXRemote } from 'next-mdx-remote/rsc'
+import remarkGfm from 'remark-gfm'
 import { mdxComponents } from '@/lib/mdx-components'
 
 interface ArticleBodyProps {
@@ -8,7 +9,11 @@ interface ArticleBodyProps {
 export function ArticleBody({ content }: ArticleBodyProps) {
   return (
     <div className="prose-saffron">
-      <MDXRemote source={content} components={mdxComponents} />
+      <MDXRemote
+        source={content}
+        components={mdxComponents}
+        options={{ mdxOptions: { remarkPlugins: [remarkGfm] } }}
+      />
     </div>
   )
 }
