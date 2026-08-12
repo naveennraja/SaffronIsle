@@ -140,7 +140,7 @@ explains who it affects. Every warning names a next action.
 npm test
 ```
 
-107 tests, no checked-in binary fixtures.
+125 tests, no checked-in binary fixtures.
 
 [`test/helpers/docx.js`](test/helpers/docx.js) builds real OOXML packages and real PNG bytes in memory,
 so mammoth and `image-size` run their genuine parsers rather than stubs. A test declares the document
@@ -167,7 +167,8 @@ every push and PR to `main`.
 Stated plainly, because they're deliberate trade-offs rather than oversights:
 
 - **`htmlToMarkdown` is a regex chain, not a parser.** It handles what Word actually emits for this
-  author's documents. **Tables are not supported at all** — a table in a `.docx` will not survive.
+  author's documents, including tables — but table support is more regex on top of the same chain,
+  not a rewrite, so it only covers the table shapes seen so far.
 - **Admin auth is still a single shared password** — one secret, no accounts, no second factor. The
   handling around it is hardened (above), but the credential itself is as strong as the password
   chosen for it.
