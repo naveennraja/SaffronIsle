@@ -158,13 +158,126 @@ A replacement moved an article without saying so. A publish said "Article publis
 the build. The single most useful change was making the system say what it is about to do, in her
 terms, before it does it.
 
+## Ask Saffron Isle
+
+A floating **Ask** button on every public page opens a chat panel. Readers ask a question ("How do
+I renew my IRP?") and get an answer that streams in word by word, drawn **only** from Nethra's
+articles, with links to the articles it used.
+
+```mermaid
+flowchart LR
+    Q[Reader's question] --> R[POST /api/ask]
+    A[All published articles<br/>as cited documents] --> R
+    R -->|Opus 5.5, prompt-cached corpus| C[Claude]
+    C -->|text deltas + citations| R
+    R -->|NDJSON: text… then meta| P[Ask panel]
+```
+
+### The trade-off: no search index, on purpose
+
+The textbook build is retrieval: embed the articles, store the vectors, fetch the top few for each
+question, and send only those. Here, **every article goes to the model on every question**, and
+there is no retrieval layer at all.
+
+That is the right call at this size, not a shortcut:
+
+- **The whole corpus is about 25K tokens.** It fits comfortably, and it is sent as a prompt-cached
+  prefix, so after the first question it is billed at the cache-read rate. An answer costs about one
+  to two cents.
+- **There is no search step to get wrong.** Retrieval's typical failure is quiet: the right article
+  isn't in the top few, and the model answers "not covered" with full confidence. With everything in
+  context, that failure cannot happen.
+- **Nothing to run.** No vector database, no embedding job, no index going stale when an article is
+  published. A new article is in the next answer after its deploy.
+
+When to switch: past roughly **100 articles (~150K tokens)**, or as soon as the cost per answer or
+time to first word starts to matter. At that point, add retrieval in front of the same prompt. The
+citation handling and the UI stay as they are.
+
+### Decided in code, not by the model
+
+- **Sources come from the API's citations.** Each article is a `document` block with citations
+  enabled, and the links under an answer are built from the `document_index` of each citation
+  ([`lib/ask/sources.ts`](lib/ask/sources.ts)). "Which article it used" is a fact about the
+  response, not a claim inside it.
+- **"Answered" needs more than a citation.** The first live test asked "How do I renew my IRP?".
+  Claude correctly said there is no renewal article, but it cited the first-time registration guide
+  for related facts, so a citation-only rule logged the question as answered. Now the prompt
+  requires a fixed opening line when the question asked isn't covered, and an answer counts only if
+  it cites something and doesn't open that way. Otherwise the gap would never reach Nethra's list.
+- **Links stay on the site.** Answers can link to articles and categories, but the panel renders
+  only `/articles/…` and `/category/…` paths as links ([`lib/ask/format.ts`](lib/ask/format.ts)).
+  Anything else shows as plain text, and nothing is ever injected as HTML. The category list in the
+  prompt includes only categories that have published articles, so "not covered" never points to an
+  empty page.
+- **Honest uncertainty is the prompt's main job.** If the articles don't cover a question, the model
+  must say so and point to the nearest article or category rather than answer from general knowledge
+  ([`lib/ask/prompt.ts`](lib/ask/prompt.ts)).
+- **The immigration note is deterministic.** Any answer citing a visa article, or any question
+  mentioning visas, IRP, stamps, permits and the like, gets a fixed line pointing to the official
+  Immigration Service Delivery website. This note matters most exactly when the model sounds
+  confident, so it isn't left to the model.
+- **The prefix is byte-stable.** Articles are ordered by slug, not date, and nothing per-request goes
+  into the system prompt, so the cache keeps hitting
+  ([`lib/ask/documents.ts`](lib/ask/documents.ts)).
+
+### Reader questions: what people ask, and what's missing
+
+Every question is logged anonymously so Nethra can see what readers need. The most useful output is
+the list of questions the articles couldn't answer, because that list is her next articles.
+
+```mermaid
+flowchart LR
+    A[Answer finishes streaming] -->|after()| R[Regex redaction<br/>lib/ask/redact.js]
+    R --> H[Haiku 5.5 name scrub<br/>regex runs again after]
+    H --> S[(Upstash Redis, EU<br/>question: 90-day expiry)]
+    C[Vercel Cron, daily] --> G[Haiku 5.5 groups<br/>new questions into topics]
+    S --> G
+    G --> T[(Topic counts<br/>kept, nothing personal)]
+    T --> V[/admin → Reader questions/]
+```
+
+- **Logged after the answer, never in its way.** The save runs in `after()`, once the response
+  has finished. A failed save is a log line, not a failed answer.
+- **Redacted before it is written.** First a deterministic pass removes anything with a shape:
+  emails, Irish and Indian phone numbers, IP addresses, PPS and passport numbers, Eircodes, long ID
+  numbers and links ([`lib/ask/redact.js`](lib/ask/redact.js), with tests for what it must leave
+  alone, such as "Stamp 1G", "€300" or "2024-2025"). Then Claude Haiku 5.5 removes names, which
+  have no shape. The regex runs again on Haiku's output, so the model can only remove more, never
+  less. If Haiku fails, the regex result is saved. The original text is never stored.
+- **Nothing identifies the reader.** The stored record is the redacted question, whether it was
+  answered, which articles were cited, and a timestamp. No IP, no user agent, no cookie.
+- **Deletion is key expiry, not a job.** Each question is written with a 90-day TTL, so it cannot
+  outlive that if a cleanup script stops running, because there isn't one. Topic counts are kept,
+  because a count carries nothing personal.
+- **Grouped once a day.** A Vercel Cron route sends Haiku the existing topics and the new questions
+  and gets back one assignment per question, as structured output. "How to renew IRP", "IRP renewal
+  steps" and "IRP expired what to do" become one topic. The counting rules live in a pure function
+  ([`lib/ask/insights.ts`](lib/ask/insights.ts)). They are tested for idempotency (a re-run never
+  double-counts) and for duplicate labels within one batch. Any question the model fumbles stays
+  pending for the next run.
+- **The to-do list closes itself, and reopens.** "Written it — remove" takes a topic off Nethra's
+  list. If readers keep asking and the new article still doesn't answer them, the topic comes back.
+
+The chat panel's notice and the privacy page both read the same switch. They say "saved
+anonymously" only when saving is actually configured, and "not stored" otherwise.
+
+### Switching it on
+
+- **Answers:** set `ANTHROPIC_API_KEY` and `NEXT_PUBLIC_ASK_ENABLED=true`, in `.env.local` for
+  your machine or in Vercel for the live site, then restart or redeploy (it is read at build time). When it is off, the button isn't rendered and
+  `/api/ask` returns 503, so the site is exactly as it was.
+- **Reader questions:** add Upstash Redis from the Vercel Marketplace, in an EU region (Ireland),
+  which injects its own credentials, and set `CRON_SECRET`. Without Redis, nothing is saved, the
+  panel says so, and the admin tab says it isn't switched on.
+
 ## Testing
 
 ```bash
 npm test
 ```
 
-125 tests, no checked-in binary fixtures.
+203 tests, no checked-in binary fixtures.
 
 [`test/helpers/docx.js`](test/helpers/docx.js) builds real OOXML packages and real PNG bytes in memory,
 so mammoth and `image-size` run their genuine parsers rather than stubs. A test declares the document
@@ -247,7 +360,13 @@ Stated plainly, because they're deliberate trade-offs rather than oversights:
 - **One unparseable article still fails the whole build.** The likeliest causes are fixed, but the
   amplifier remains. Failing loudly at build time is arguably correct — it just hasn't been decided
   deliberately yet.
-- **Tests cover the conversion, frontmatter, scheduling and auth layers only.** The auth *module* is
+- **Redaction is best-effort.** The regex pass is deterministic and tested, and Haiku catches names,
+  but no redactor is perfect. That is why stored questions also expire after 90 days and are only
+  visible behind the admin password.
+- **Ask Saffron Isle is single-turn.** Each question is answered on its own; follow-ups don't see
+  the previous answer. Its rate limit (8 a minute, 40 a day per address) is per serverless
+  instance, like the admin limiter.
+- **Tests cover the conversion, frontmatter, scheduling, auth and Ask layers only.** The auth *module* is
   covered in depth; the route wiring around it, and the components, are not.
 
 ## How I built this
@@ -343,6 +462,10 @@ npm run dev
 | `NEWSLETTER_API_KEY` | Brevo or Mailchimp API key |
 | `NEWSLETTER_LIST_ID` | List ID from your provider |
 | `NEWSLETTER_PROVIDER` | `brevo` (default) or `mailchimp` |
+| `NEXT_PUBLIC_ASK_ENABLED` | `true` shows the Ask button and enables `/api/ask`. Off unless set. Read at build time |
+| `ANTHROPIC_API_KEY` | Claude API key for Ask Saffron Isle |
+| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | *Optional.* Reader-question storage. The Vercel Marketplace integration's `KV_REST_API_URL` / `KV_REST_API_TOKEN` work too |
+| `CRON_SECRET` | Authenticates the daily question-grouping cron (`vercel.json`) |
 
 `.env.local` is git-ignored and applies to local dev only. `/admin` runs server-side in production, so
 `ADMIN_PASSWORD`, `GITHUB_TOKEN` and `GITHUB_REPO` must **also** be set in the Vercel project's

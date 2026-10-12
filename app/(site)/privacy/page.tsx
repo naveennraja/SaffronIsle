@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { getSiteUrl } from '@/lib/utils'
+import { insightsEnabled } from '@/lib/ask/store'
 
 export const metadata: Metadata = {
   title: 'Privacy policy',
@@ -8,6 +9,7 @@ export const metadata: Metadata = {
 }
 
 export default function PrivacyPage() {
+  const savesQuestions = insightsEnabled()
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 lg:py-16">
       <h1 className="mb-6 font-serif text-h1 text-forest">Privacy policy</h1>
@@ -25,6 +27,34 @@ export default function PrivacyPage() {
         <p>
           We use privacy-friendly analytics (Vercel Analytics) to understand how visitors
           use the site. No personally identifiable information is sold to third parties.
+        </p>
+        <h2 className="font-serif text-h3 text-forest">Ask Saffron Isle</h2>
+        <p>
+          When you use the Ask button, your question is sent to Anthropic, the company
+          that makes the Claude AI model, so it can write an answer from our articles.
+          Anthropic processes the request to return the answer under its commercial
+          terms and does not use it to train its models.
+        </p>
+        {savesQuestions ? (
+          <p>
+            To learn what readers need, we save each question anonymously: personal
+            details such as names, email addresses, phone numbers and ID numbers are
+            removed before it is saved, and we never store your IP address or anything
+            else that identifies you. We keep the question, whether our articles could
+            answer it, and which article was used. Saved questions are stored in the EU
+            and deleted automatically after 90 days; after that we keep only counts of
+            how often each topic was asked.
+          </p>
+        ) : (
+          <p>
+            Saffron Isle does not store your question or the answer, and does not link
+            them to you.
+          </p>
+        )}
+        <p>
+          Please don&apos;t include personal details such as your name, passport, IRP or
+          PPS number, phone number or email address in a question. Nothing in the answer
+          is legal or immigration advice — always check official sources before you act.
         </p>
         <h2 className="font-serif text-h3 text-forest">Contact</h2>
         <p>

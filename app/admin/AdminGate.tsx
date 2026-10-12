@@ -3,7 +3,7 @@
 import { useEffect, useState, type SubmitEvent } from 'react'
 import { AlertCircle, Loader2, Lock } from 'lucide-react'
 import AdminShell, { AdminMark, inputClass, primaryButtonClass } from './AdminShell'
-import PublishArticleForm from './PublishArticleForm'
+import AdminWorkspace from './AdminWorkspace'
 
 type AuthStatus = 'idle' | 'auth'
 
@@ -188,5 +188,5 @@ export default function AdminGate() {
     )
   }
 
-  return <PublishArticleForm onSignOut={handleSignOut} />
+  return <AdminWorkspace onSignOut={handleSignOut} />
 }
