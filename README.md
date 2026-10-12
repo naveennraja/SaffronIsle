@@ -134,6 +134,30 @@ The author cannot read a stack trace and cannot fix the code. So a picture Word 
 Oversized documents name the actual megabyte count and the exact Word menu path. Missing alt text
 explains who it affects. Every warning names a next action.
 
+## What changed after the author used it
+
+The first version of `/admin` worked when I tested it. Most of what it does now came from watching it
+meet real documents and a real writer. Each change below started with something the author hit,
+not with something I planned:
+
+| What happened | What changed |
+|---|---|
+| Her articles came out as walls of text. Pictures placed in Word were silently deleted, base64 payload and all. | Embedded images are extracted and placed where they sat in the document ([`31de041`](https://github.com/naveennraja/SaffronIsle/commit/31de041)) |
+| Fixing a typo meant editing MDX by hand, the one thing this pipeline exists to avoid. | Re-uploading under the same slug replaces the article, and the form says so *before* she commits ([`a843403`](https://github.com/naveennraja/SaffronIsle/commit/a843403)) |
+| Her first correction quietly retitled "20 Free Things in Ireland Most Immigrants Miss" to Title Case and dropped its meta title. | Blank fields mean "leave as it is", consistently across the form ([`3165561`](https://github.com/naveennraja/SaffronIsle/commit/3165561)) |
+| A community story was refiled under *visa* on its first replacement, because the category dropdown defaulted to visa. | The dropdown follows the article being replaced, and a move only happens when she changes it ([`67b71fb`](https://github.com/naveennraja/SaffronIsle/commit/67b71fb)) |
+| She typed `Salaries <2000 euro` in Word. MDX read it as a JSX tag, the build broke, and it stayed broken for every later article. | `<` is now escaped so the sentence publishes as typed, and every article is compiled before it is committed, so one that can't compile never reaches `main` ([`f1d6b84`](https://github.com/naveennraja/SaffronIsle/commit/f1d6b84)) |
+| One title field served two jobs: a natural heading on the page and a keyword-led title in search results. | A separate, optional meta title ([`57d7238`](https://github.com/naveennraja/SaffronIsle/commit/57d7238)) |
+| Writing and publishing had to happen at the same moment. | A future publish date commits now and goes live on the day ([`64a0a33`](https://github.com/naveennraja/SaffronIsle/commit/64a0a33)) |
+| The groceries article's quick-reference table ran together as loose paragraphs. | Word tables become GFM tables, and `remark-gfm` is actually wired into the renderer ([`2d0c3c2`](https://github.com/naveennraja/SaffronIsle/commit/2d0c3c2), [`c3c3373`](https://github.com/naveennraja/SaffronIsle/commit/c3c3373)) |
+| The form was one long column, and the "you're about to overwrite an article" notice was easy to miss under the slug field. | Two columns (describing the article / publishing it), with the replace notice in its own panel ([`79efb81`](https://github.com/naveennraja/SaffronIsle/commit/79efb81)) |
+| Every reload asked for the password again. | An 8-hour signed session, so the password travels once ([`847623d`](https://github.com/naveennraja/SaffronIsle/commit/847623d)) |
+
+The pattern: nearly every fix was about a failure being **silent**. Images vanished without a warning.
+A replacement moved an article without saying so. A publish said "Article published!" and then broke
+the build. The single most useful change was making the system say what it is about to do, in her
+terms, before it does it.
+
 ## Testing
 
 ```bash
@@ -162,6 +186,50 @@ text — a string that merely looks escaped proves nothing.
 CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs typecheck → lint → build → test on
 every push and PR to `main`.
 
+## Accessibility
+
+Audited with Lighthouse 12.8.2 (mobile emulation, headless Chrome) against a local production build
+(`next build && next start`) on 9 October 2026.
+
+| Page | Accessibility before → after | Performance | Best practices | SEO |
+|---|---|---|---|---|
+| `/` home | 93 → **100** | 95 | 96 | 100 |
+| `/articles` | 86 → **100** | 94 | 96 | 100 |
+| `/articles/graduation-stamp1g-visa` | 92 → **100** | 95 | 96 | 100 |
+| `/category/visa` | 91 → **100** | 95 | 96 | 100 |
+| `/search` | 90 → **100** | 95 | 96 | 100 |
+| `/about` | 92 → **100** | 96 | 96 | 100 |
+| `/admin` (sign-in) | 95 → **100** | 89 | 96 | 100 |
+
+Performance, best-practices and SEO are the after-fix runs. Performance moves a few points between
+runs. Best practices is 96 everywhere for one reason only: Vercel Analytics' script 404s outside
+Vercel.
+
+What was fixed:
+
+- **Contrast.** `saffron-dark` (`#C97A1A`, 3.3:1 on white) is the colour every category label is
+  specified to use, so the token itself moved to `#9E5C0C` (5.3:1 on white, ≥ 4.6:1 on the tinted badge
+  backgrounds). That fixed every usage at once, with no per-component overrides. Card descriptions and
+  meta lines (`forest/50`–`/60`, 3.0–4.0:1) went to `forest/70`, the footer's bottom strip went from
+  `gray-500` to `gray-400` on forest, and the admin page's small print went from `gray-400` to `gray-500`.
+- **Saffron buttons used white text at 2.4:1.** That includes the admin *Publish* button, which
+  Lighthouse never saw because it sits behind sign-in. They now use forest text (6.0:1), as AGENTS.md
+  specified in the first place.
+- **The closed mobile menu was still in the tab order.** It is only translated off-screen, and
+  `aria-hidden` hides it from screen readers but not from the keyboard. It is now `inert` while closed.
+- **Heading order.** Article cards are `h3`s, but listing pages went straight from `h1` to them, and
+  the footer's column titles were `h3`s on pages with no `h2`. Listing pages now carry a visually hidden
+  `h2`, and footer titles are `h2`.
+- **The category filter claimed `role="tablist"`** but contained plain buttons. It is a filter, not
+  tabs, so it is now a labelled group with `aria-pressed`.
+- **The logo link's `aria-label`** ("Saffron Isle home") overrode its visible text. Removing it
+  lets the visible wordmark be the name.
+
+A 100 from Lighthouse means the automated checks pass. It does not mean the site is accessible. Axe
+(the engine behind it) can only test what a machine can measure. Whether alt text is *meaningful*,
+whether focus order makes sense and whether the mobile menu traps focus all need a keyboard-only pass
+and a screen-reader pass (VoiceOver), and neither has been done yet.
+
 ## Known limitations
 
 Stated plainly, because they're deliberate trade-offs rather than oversights:
@@ -181,6 +249,50 @@ Stated plainly, because they're deliberate trade-offs rather than oversights:
   deliberately yet.
 - **Tests cover the conversion, frontmatter, scheduling and auth layers only.** The auth *module* is
   covered in depth; the route wiring around it, and the components, are not.
+
+## How I built this
+
+I built this with AI coding tools, mainly Claude Code running in VS Code. They did most of the
+typing. The decisions, the reviewing and the verifying were mine. Three things made that division
+work.
+
+**A spec before any code.** Before the first prompt I wrote `AGENTS.md`: the stack, the colour
+tokens, the exact folder structure, the article frontmatter, the `lib/articles.ts` API, and a
+section-by-section description of every page. The agent scaffolded the site against it. A spec that
+specific turns "build me a blog" into a checklist the output can be compared against, and it gave me
+something to point at when the output drifted. Several of the accessibility fixes above were simply
+the code catching up with what the spec already said.
+
+The spec was also wrong in places, and that was useful to discover. It said "no backend", but the
+author couldn't use git, so `/admin` and its GitHub-committing route exist anyway. It said Next.js 14,
+and the site is on 16 after a dependency audit. The spec was a starting contract, not scripture.
+
+**Small, explained commits.** I asked for one change per commit, with a message that explains *why*:
+what was broken, what it cost, and why this fix rather than the obvious one. Most of the "parts worth
+reading" above were written as commit messages first. That also made the AI's work reviewable. A
+diff that comes with its reasoning is far quicker to check than a diff on its own.
+
+**AI review as a separate pass.** After a feature worked, I ran review passes over it (code review
+and security review) as a different job from writing it. That is where the most important changes
+came from. The consolidation of four duplicated modules started as a review finding. So did the
+admin auth hardening: the original `===` password compare was written by the same tool that later
+flagged it.
+
+What didn't work, or needed me:
+
+- **Silent failures got past everyone, including the AI.** `next-mdx-remote` stripping `{...}`
+  attributes, and `children.join('')` producing `id="object-object"`, both rendered without an
+  error. Neither was caught by generating code. They were caught by looking at the deployed page.
+  "It builds" was never the bar. The fixes that mattered were checked on the live site.
+- **The tool optimises for the request, not the user.** The first `/admin` was technically
+  correct and miserable to use. Every row in *What changed after the author used it* came from
+  watching a real person use it, which no prompt could have stood in for.
+- **Confident and wrong is the expensive failure.** The newsletter route replied "You are
+  subscribed!" with no provider configured. It was plausible code that discarded every address. I now
+  read every success path asking "what actually happened?"
+
+Commit history is honest about this: earlier commits carry an AI co-author trailer. Later ones don't,
+by my choice, but the workflow is the same throughout.
 
 ## Stack
 
