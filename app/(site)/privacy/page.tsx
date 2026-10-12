@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { getSiteUrl } from '@/lib/utils'
+import { SITE } from '@/lib/site-config'
 import { insightsEnabled } from '@/lib/ask/store'
 
 export const metadata: Metadata = {
@@ -32,8 +33,15 @@ export default function PrivacyPage() {
         <p>
           When you use the Ask button, your question is sent to Anthropic, the company
           that makes the Claude AI model, so it can write an answer from our articles.
-          Anthropic processes the request to return the answer under its commercial
-          terms and does not use it to train its models.
+          Anthropic processes the request to return the answer, and under{' '}
+          <a
+            href="https://www.anthropic.com/legal/commercial-terms"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Anthropic&apos;s Commercial Terms
+          </a>{' '}
+          it may not use it to train its models.
         </p>
         {savesQuestions ? (
           <p>
@@ -59,7 +67,7 @@ export default function PrivacyPage() {
         <h2 className="font-serif text-h3 text-forest">Contact</h2>
         <p>
           For privacy questions, email{' '}
-          <a href="mailto:hello@saffronisle.ie">hello@saffronisle.ie</a>.
+          <a href={`mailto:${SITE.contactEmail}`}>{SITE.contactEmail}</a>.
         </p>
       </div>
     </div>
