@@ -16,7 +16,7 @@ export default function ArticlesPage() {
     <div className="mx-auto max-w-6xl px-4 py-12">
       <header className="mb-8">
         <h1 className="mb-2 font-serif text-h1 text-forest">All articles</h1>
-        <p className="mb-6 text-body text-forest/60">
+        <p className="mb-6 text-body text-forest/70">
           Practical guides and stories for Indians in Ireland.
         </p>
         <SearchBar className="max-w-lg" />

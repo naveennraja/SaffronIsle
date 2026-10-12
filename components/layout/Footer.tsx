@@ -59,9 +59,9 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="mb-4 text-label font-semibold uppercase tracking-widest text-saffron">
+            <h2 className="mb-4 text-label font-semibold uppercase tracking-widest text-saffron">
               Explore
-            </h3>
+            </h2>
             <ul className="space-y-2">
               {VISIBLE_CATEGORIES.map(({ slug, label }) => (
                 <li key={slug}>
@@ -77,9 +77,9 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="mb-4 text-label font-semibold uppercase tracking-widest text-saffron">
+            <h2 className="mb-4 text-label font-semibold uppercase tracking-widest text-saffron">
               Information
-            </h3>
+            </h2>
             <ul className="space-y-2 text-small">
               <li>
                 <Link
@@ -120,9 +120,9 @@ export function Footer() {
 
           {NEWSLETTER_ENABLED && (
             <div>
-              <h3 className="mb-4 text-label font-semibold uppercase tracking-widest text-saffron">
+              <h2 className="mb-4 text-label font-semibold uppercase tracking-widest text-saffron">
                 Newsletter
-              </h3>
+              </h2>
               <p className="mb-4 text-small leading-relaxed text-gray-400">
                 Visa updates and weekly tips.
               </p>
@@ -131,18 +131,18 @@ export function Footer() {
           )}
         </div>
 
-        <div className="mt-12 flex flex-col gap-2 border-t border-white/10 pt-8 text-small text-gray-500 sm:flex-row sm:justify-between">
+        <div className="mt-12 flex flex-col gap-2 border-t border-white/10 pt-8 text-small text-gray-400 sm:flex-row sm:justify-between">
           <p>© {new Date().getFullYear()} Saffron Isle</p>
           <div className="flex flex-wrap gap-4">
             <Link
               href="/privacy"
-              className="text-gray-500 no-underline transition-colors hover:text-white"
+              className="text-gray-400 no-underline transition-colors hover:text-white"
             >
               Privacy Policy
             </Link>
             <Link
               href="/affiliate-disclosure"
-              className="text-gray-500 no-underline transition-colors hover:text-white"
+              className="text-gray-400 no-underline transition-colors hover:text-white"
             >
               Affiliate Disclosure
             </Link>

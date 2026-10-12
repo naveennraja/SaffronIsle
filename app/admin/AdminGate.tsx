@@ -96,7 +96,7 @@ export default function AdminGate() {
   if (checkingSession) {
     return (
       <AdminShell maxWidth="sm" center>
-        <div className="flex flex-col items-center gap-3 text-gray-400">
+        <div className="flex flex-col items-center gap-3 text-gray-500">
           <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
           <p className="text-sm">Checking your session…</p>
         </div>
@@ -179,7 +179,7 @@ export default function AdminGate() {
             </button>
           </form>
 
-          <p className="mt-6 border-t border-mist/60 pt-4 text-center text-xs leading-relaxed text-gray-400">
+          <p className="mt-6 border-t border-mist/60 pt-4 text-center text-xs leading-relaxed text-gray-500">
             Sessions last 8 hours. After five wrong attempts this address is
             locked out for fifteen minutes.
           </p>

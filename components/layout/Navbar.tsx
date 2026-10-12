@@ -55,7 +55,6 @@ export function Navbar() {
           <Link
             href="/"
             className="flex items-center gap-2 no-underline"
-            aria-label="Saffron Isle home"
           >
             <span
               className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-saffron to-saffron-dark text-sm font-bold text-white shadow-soft"

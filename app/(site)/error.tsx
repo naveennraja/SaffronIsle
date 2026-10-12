@@ -38,7 +38,7 @@ export default function SiteError({
       <div className="flex flex-wrap items-center justify-center gap-3">
         <button
           onClick={reset}
-          className="rounded-full bg-saffron px-6 py-3 font-semibold text-white shadow-soft transition hover:bg-saffron-dark"
+          className="rounded-full bg-saffron px-6 py-3 font-semibold text-forest shadow-soft transition hover:bg-saffron-light"
         >
           Try again
         </button>

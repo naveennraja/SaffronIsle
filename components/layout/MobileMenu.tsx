@@ -34,7 +34,9 @@ export function MobileMenu({ open, onClose }: MobileMenuProps) {
           'fixed right-0 top-0 z-50 flex h-full w-full max-w-sm flex-col bg-white shadow-xl transition-transform duration-300 lg:hidden',
           open ? 'translate-x-0' : 'translate-x-full'
         )}
-        aria-hidden={!open}
+        // inert, not just aria-hidden: the closed menu is only translated
+        // off-screen, so without it its links stay in the tab order.
+        inert={!open}
         aria-label="Mobile navigation"
       >
         <div className="flex min-h-[56px] items-center justify-between border-b border-mist/60 px-5">
@@ -42,9 +44,11 @@ export function MobileMenu({ open, onClose }: MobileMenuProps) {
             href="/"
             onClick={onClose}
             className="flex items-center gap-2 no-underline"
-            aria-label="Saffron Isle home"
           >
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-saffron to-saffron-dark text-xs font-bold text-white shadow-soft">
+            <span
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-saffron to-saffron-dark text-xs font-bold text-white shadow-soft"
+              aria-hidden
+            >
               SI
             </span>
             <span className="font-serif text-base font-semibold text-forest">

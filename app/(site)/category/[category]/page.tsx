@@ -60,13 +60,14 @@ export default async function CategoryPage({ params }: PageProps) {
         <p className="mb-3 max-w-2xl text-lg leading-relaxed text-forest/70">
           {category.description}
         </p>
-        <p className="text-small font-medium text-forest/40">
+        <p className="text-small font-medium text-forest/70">
           {count} {count === 1 ? 'article' : 'articles'}
         </p>
       </header>
 
       <div className="lg:grid lg:grid-cols-[1fr_280px] lg:gap-12">
         <div>
+          <h2 className="sr-only">Articles</h2>
           {hasCityTagged ? (
             <CategoryArticlesClient articles={articles} />
           ) : (

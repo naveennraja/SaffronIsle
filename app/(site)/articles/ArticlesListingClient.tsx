@@ -23,11 +23,13 @@ export function ArticlesListingClient({ articles }: ArticlesListingClientProps) 
     <>
       <div
         className="mb-8 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        role="tablist"
+        role="group"
+        aria-label="Filter by category"
       >
         <button
           type="button"
           onClick={() => setCategory('all')}
+          aria-pressed={category === 'all'}
           className={cn(
             'min-h-[44px] shrink-0 rounded-full px-4 py-2 text-small font-medium',
             category === 'all'
@@ -42,6 +44,7 @@ export function ArticlesListingClient({ articles }: ArticlesListingClientProps) 
             key={cat.slug}
             type="button"
             onClick={() => setCategory(cat.slug)}
+            aria-pressed={category === cat.slug}
             className={cn(
               'min-h-[44px] shrink-0 rounded-full px-4 py-2 text-small font-medium whitespace-nowrap',
               category === cat.slug
@@ -53,6 +56,7 @@ export function ArticlesListingClient({ articles }: ArticlesListingClientProps) 
           </button>
         ))}
       </div>
+      <h2 className="sr-only">Articles</h2>
       <ArticleGrid articles={filtered} />
       <p className="mt-8 text-center text-small text-gray-500">
         Can&apos;t find what you need?{' '}

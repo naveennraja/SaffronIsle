@@ -8,7 +8,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        saffron: { DEFAULT: '#E8952E', dark: '#C97A1A', light: '#F5B04A' },
+        saffron: { DEFAULT: '#E8952E', dark: '#9E5C0C', light: '#F5B04A' },
         emerald: { DEFAULT: '#1A7A52', dark: '#145C3D', light: '#E8F5EF' },
         forest: { DEFAULT: '#1A2E24', light: '#2D4A3A' },
         cream: { DEFAULT: '#FBF7F2', dark: '#F3EBE0' },

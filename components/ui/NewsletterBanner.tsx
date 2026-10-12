@@ -26,7 +26,7 @@ export function NewsletterBanner() {
               inbox.
             </p>
             <NewsletterForm
-              formClassName="[&_input]:border-white/20 [&_input]:bg-white/95 [&_button]:bg-saffron [&_button]:text-white [&_button]:hover:bg-saffron-dark"
+              formClassName="[&_input]:border-white/20 [&_input]:bg-white/95 [&_button]:bg-saffron [&_button]:text-forest [&_button]:hover:bg-saffron-light"
             />
             <p className="mt-4 text-small text-emerald-light/80">
               No spam. Unsubscribe any time.

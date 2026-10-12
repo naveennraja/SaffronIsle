@@ -247,7 +247,7 @@ export default function PublishArticleForm({ onSignOut }: { onSignOut: () => voi
                   <p className="mt-2 flex items-center gap-1.5 text-xs text-emerald-dark">
                     <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
                     <span className="truncate font-medium">{file.name}</span>
-                    <span className="shrink-0 text-gray-400">
+                    <span className="shrink-0 text-gray-500">
                       {(file.size / 1_000_000).toFixed(1)}MB
                     </span>
                   </p>
@@ -349,7 +349,7 @@ export default function PublishArticleForm({ onSignOut }: { onSignOut: () => voi
               </button>
 
               {!canSubmit && !isLoading && (
-                <p className="text-center text-xs text-gray-400">
+                <p className="text-center text-xs text-gray-500">
                   {!slug.trim()
                     ? 'Add a URL slug to continue.'
                     : !file

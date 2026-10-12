@@ -33,6 +33,7 @@ export function SearchPageClient({ articles }: SearchPageClientProps) {
             {results.length} result{results.length !== 1 ? 's' : ''} for &ldquo;{query}
             &rdquo;
           </p>
+          <h2 className="sr-only">Results</h2>
           <ArticleGrid articles={results} />
         </>
       ) : (

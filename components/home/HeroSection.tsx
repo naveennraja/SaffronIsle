@@ -67,7 +67,7 @@ export function HeroSection() {
                       aria-hidden
                     />
                     <p className="font-serif text-h3 text-forest">{value}</p>
-                    <p className="text-label text-forest/55">{label}</p>
+                    <p className="text-label text-forest/70">{label}</p>
                   </dd>
                 </div>
               ))}

@@ -17,7 +17,7 @@ export default function SearchPage() {
     <div className="mx-auto max-w-4xl px-4 py-12">
       <header className="mb-8">
         <h1 className="mb-2 font-serif text-h1 text-forest">Search</h1>
-        <p className="text-body text-forest/60">
+        <p className="text-body text-forest/70">
           Find guides, tips, and stories across all topics.
         </p>
       </header>

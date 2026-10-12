@@ -82,7 +82,7 @@ export function ArticleCard({ article, size = 'default' }: ArticleCardProps) {
           >
             {article.title}
           </h3>
-          <p className="mb-4 line-clamp-2 flex-1 text-small leading-relaxed text-forest/60">
+          <p className="mb-4 line-clamp-2 flex-1 text-small leading-relaxed text-forest/70">
             {article.description}
           </p>
           <ArticleMeta article={article} />

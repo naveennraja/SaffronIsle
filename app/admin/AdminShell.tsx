@@ -69,7 +69,7 @@ export function AdminTopBar({ children }: { children?: ReactNode }) {
             <span className="block font-serif text-sm text-forest sm:text-base">
               Saffron Isle
             </span>
-            <span className="block text-label uppercase text-gray-400">Admin</span>
+            <span className="block text-label uppercase text-gray-500">Admin</span>
           </div>
         </div>
         {children}
@@ -188,7 +188,7 @@ export function AdminField({
             </span>
           )}
           {optional && (
-            <span className="font-normal text-gray-400"> — {optional}</span>
+            <span className="font-normal text-gray-500"> — {optional}</span>
           )}
         </label>
         {counter}
@@ -208,7 +208,7 @@ export function AdminCounter({ length, limit }: { length: number; limit: number 
     <span
       className={cn(
         'shrink-0 tabular-nums text-xs',
-        over ? 'font-medium text-red-500' : near ? 'text-amber-600' : 'text-gray-400'
+        over ? 'font-medium text-red-500' : near ? 'text-amber-600' : 'text-gray-500'
       )}
     >
       {length}/{limit}
@@ -218,10 +218,10 @@ export function AdminCounter({ length, limit }: { length: number; limit: number 
 }
 
 export const inputClass =
-  'w-full rounded-xl border border-mist bg-white px-3.5 py-2.5 text-sm text-forest transition-colors placeholder:text-gray-400 hover:border-emerald/30 focus:border-saffron focus:outline-none focus:ring-2 focus:ring-saffron/20 disabled:cursor-not-allowed disabled:bg-cream/60'
+  'w-full rounded-xl border border-mist bg-white px-3.5 py-2.5 text-sm text-forest transition-colors placeholder:text-gray-500 hover:border-emerald/30 focus:border-saffron focus:outline-none focus:ring-2 focus:ring-saffron/20 disabled:cursor-not-allowed disabled:bg-cream/60'
 
 export const fileInputClass =
   'w-full cursor-pointer rounded-xl border border-dashed border-mist bg-cream/40 px-3.5 py-2.5 text-sm text-gray-500 transition-colors hover:border-saffron/60 hover:bg-saffron/[0.04] focus:border-saffron focus:outline-none focus:ring-2 focus:ring-saffron/20 file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-forest file:shadow-soft'
 
 export const primaryButtonClass =
-  'inline-flex w-full items-center justify-center gap-2 rounded-xl bg-saffron px-5 py-3 text-sm font-semibold text-white shadow-soft transition-all hover:bg-saffron-dark hover:shadow-card focus:outline-none focus:ring-2 focus:ring-saffron/40 focus:ring-offset-2 active:scale-[0.99] disabled:pointer-events-none disabled:opacity-50'
+  'inline-flex w-full items-center justify-center gap-2 rounded-xl bg-saffron px-5 py-3 text-sm font-semibold text-forest shadow-soft transition-all hover:bg-saffron-light hover:shadow-card focus:outline-none focus:ring-2 focus:ring-saffron/40 focus:ring-offset-2 active:scale-[0.99] disabled:pointer-events-none disabled:opacity-50'

@@ -9,7 +9,7 @@ interface ArticleMetaProps {
 
 export function ArticleMeta({ article, showCity = true }: ArticleMetaProps) {
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-small text-forest/50">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-small text-forest/70">
       <span className="flex items-center gap-1">
         <span className="sr-only">Author: </span>
         {article.author}

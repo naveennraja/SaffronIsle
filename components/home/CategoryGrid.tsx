@@ -58,10 +58,10 @@ export function CategoryGrid() {
                 <h3 className="mb-1 font-serif text-h3 text-forest">
                   {category.label}
                 </h3>
-                <p className="mb-3 text-label text-forest/50">
+                <p className="mb-3 text-label text-forest/70">
                   {count} {count === 1 ? 'article' : 'articles'}
                 </p>
-                <p className="mb-4 line-clamp-2 flex-1 text-small leading-relaxed text-forest/60">
+                <p className="mb-4 line-clamp-2 flex-1 text-small leading-relaxed text-forest/70">
                   {category.description}
                 </p>
                 <span className="inline-flex items-center gap-1 text-label font-semibold uppercase tracking-wider text-emerald opacity-0 transition-opacity group-hover:opacity-100">
