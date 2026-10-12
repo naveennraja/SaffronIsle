@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { getSiteUrl } from '@/lib/utils'
-import { SITE } from '@/lib/site-config'
+import { ASK_ENABLED, SITE } from '@/lib/site-config'
 import { insightsEnabled } from '@/lib/ask/store'
 
 export const metadata: Metadata = {
@@ -29,41 +29,46 @@ export default function PrivacyPage() {
           We use privacy-friendly analytics (Vercel Analytics) to understand how visitors
           use the site. No personally identifiable information is sold to third parties.
         </p>
-        <h2 className="font-serif text-h3 text-forest">Ask Saffron Isle</h2>
-        <p>
-          When you use the Ask button, your question is sent to Anthropic, the company
-          that makes the Claude AI model, so it can write an answer from our articles.
-          Anthropic processes the request to return the answer, and under{' '}
-          <a
-            href="https://www.anthropic.com/legal/commercial-terms"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Anthropic&apos;s Commercial Terms
-          </a>{' '}
-          it may not use it to train its models.
-        </p>
-        {savesQuestions ? (
-          <p>
-            To learn what readers need, we save each question anonymously: personal
-            details such as names, email addresses, phone numbers and ID numbers are
-            removed before it is saved, and we never store your IP address or anything
-            else that identifies you. We keep the question, whether our articles could
-            answer it, and which article was used. Saved questions are stored in the EU
-            and deleted automatically after 90 days; after that we keep only counts of
-            how often each topic was asked.
-          </p>
-        ) : (
-          <p>
-            Saffron Isle does not store your question or the answer, and does not link
-            them to you.
-          </p>
+        {/* Only describe the assistant where readers can actually use it. */}
+        {ASK_ENABLED && (
+          <>
+            <h2 className="font-serif text-h3 text-forest">Ask Saffron Isle</h2>
+            <p>
+              When you use the Ask button, your question is sent to Anthropic, the company
+              that makes the Claude AI model, so it can write an answer from our articles.
+              Anthropic processes the request to return the answer, and under{' '}
+              <a
+                href="https://www.anthropic.com/legal/commercial-terms"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Anthropic&apos;s Commercial Terms
+              </a>{' '}
+              it may not use it to train its models.
+            </p>
+            {savesQuestions ? (
+              <p>
+                To learn what readers need, we save each question anonymously: personal
+                details such as names, email addresses, phone numbers and ID numbers are
+                removed before it is saved, and we never store your IP address or anything
+                else that identifies you. We keep the question, whether our articles could
+                answer it, and which article was used. Saved questions are stored in the EU
+                and deleted automatically after 90 days; after that we keep only counts of
+                how often each topic was asked.
+              </p>
+            ) : (
+              <p>
+                Saffron Isle does not store your question or the answer, and does not link
+                them to you.
+              </p>
+            )}
+            <p>
+              Please don&apos;t include personal details such as your name, passport, IRP or
+              PPS number, phone number or email address in a question. Nothing in the answer
+              is legal or immigration advice — always check official sources before you act.
+            </p>
+          </>
         )}
-        <p>
-          Please don&apos;t include personal details such as your name, passport, IRP or
-          PPS number, phone number or email address in a question. Nothing in the answer
-          is legal or immigration advice — always check official sources before you act.
-        </p>
         <h2 className="font-serif text-h3 text-forest">Contact</h2>
         <p>
           For privacy questions, email{' '}
