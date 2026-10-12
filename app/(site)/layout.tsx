@@ -1,5 +1,8 @@
 import { Navbar } from '@/components/layout/Navbar'
 import { Footer } from '@/components/layout/Footer'
+import { AskButton } from '@/components/ask/AskButton'
+import { ASK_ENABLED } from '@/lib/site-config'
+import { insightsEnabled } from '@/lib/ask/store'
 
 /**
  * Chrome for the public site.
@@ -21,6 +24,7 @@ export default function SiteLayout({
       <Navbar />
       <main>{children}</main>
       <Footer />
+      {ASK_ENABLED && <AskButton savesQuestions={insightsEnabled()} />}
     </>
   )
 }

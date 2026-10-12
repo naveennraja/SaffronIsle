@@ -42,5 +42,5 @@ export function readTime(content: string): number {
 }
 
 export function getSiteUrl(): string {
-  return process.env.NEXT_PUBLIC_SITE_URL ?? 'https://saffronisle.ie'
+  return process.env.NEXT_PUBLIC_SITE_URL ?? 'https://saffronisle.com'
 }

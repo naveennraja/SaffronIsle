@@ -11,6 +11,23 @@
  */
 export const NEWSLETTER_ENABLED = false
 
+/**
+ * Ask Saffron Isle, the article-grounded assistant behind the floating "Ask"
+ * button.
+ *
+ * Switched on per environment with NEXT_PUBLIC_ASK_ENABLED=true — in
+ * .env.local for your own machine, in Vercel's environment variables for the
+ * live site — so turning it on locally can never be committed by accident.
+ * Without it the button is not rendered and /api/ask answers 503.
+ *
+ * It also needs ANTHROPIC_API_KEY wherever it is on; without the key the
+ * button shows but every question answers "not available right now".
+ *
+ * Read at build time (pages that show the button are static), so restart
+ * `npm run dev` or rebuild after changing it.
+ */
+export const ASK_ENABLED = process.env.NEXT_PUBLIC_ASK_ENABLED === 'true'
+
 export const SITE = {
   name: 'Saffron Isle',
   tagline: 'From one home to another',

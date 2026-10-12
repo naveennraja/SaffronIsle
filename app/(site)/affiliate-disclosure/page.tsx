@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { getSiteUrl } from '@/lib/utils'
+import { SITE } from '@/lib/site-config'
 
 export const metadata: Metadata = {
   title: 'Affiliate disclosure',
@@ -27,7 +28,7 @@ export default function AffiliateDisclosurePage() {
         </p>
         <p>
           Questions? Contact us at{' '}
-          <a href="mailto:hello@saffronisle.ie">hello@saffronisle.ie</a>.
+          <a href={`mailto:${SITE.contactEmail}`}>{SITE.contactEmail}</a>.
         </p>
       </div>
     </div>

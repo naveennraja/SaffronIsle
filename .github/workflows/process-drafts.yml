@@ -41,7 +41,7 @@ jobs:
         if: steps.check.outputs.count != '0'
         run: |
           git config user.name "Saffron Isle Bot"
-          git config user.email "bot@saffronisle.ie"
+          git config user.email "bot@saffronisle.com"
           git add content/ drafts/ public/images/articles/
           git diff --staged --quiet && echo "Nothing to commit" || \
             git commit -m "auto: publish articles from $(date +'%Y-%m-%d') drafts"

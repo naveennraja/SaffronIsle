@@ -1,5 +1,6 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import {
   AlertTriangle,
   CalendarClock,
@@ -7,7 +8,6 @@ import {
   FileText,
   ImageIcon,
   Loader2,
-  LogOut,
   Search,
   XCircle,
 } from 'lucide-react'
@@ -28,7 +28,8 @@ import { useArticleUpload } from './useArticleUpload'
 const META_TITLE_LIMIT = 60
 const META_DESCRIPTION_LIMIT = 155
 
-export default function PublishArticleForm({ onSignOut }: { onSignOut: () => void }) {
+/** `topBarActions` is the tab switch and sign-out button, owned by AdminWorkspace. */
+export default function PublishArticleForm({ topBarActions }: { topBarActions: ReactNode }) {
   const {
     file,
     setFile,
@@ -66,16 +67,7 @@ export default function PublishArticleForm({ onSignOut }: { onSignOut: () => voi
     <AdminShell
       maxWidth="xl"
       topBar={
-        <AdminTopBar>
-          <button
-            type="button"
-            onClick={onSignOut}
-            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-500 transition-colors hover:bg-mist/60 hover:text-forest focus:outline-none focus:ring-2 focus:ring-saffron/30"
-          >
-            <LogOut className="h-4 w-4" aria-hidden />
-            Sign out
-          </button>
-        </AdminTopBar>
+        <AdminTopBar>{topBarActions}</AdminTopBar>
       }
     >
       <header className="mb-6">
