@@ -46,7 +46,7 @@ export function buildAskDocuments(articles: ArticleForAsk[]): {
     title: string
     context: string
     citations: { enabled: true }
-    cache_control?: { type: 'ephemeral' }
+    cache_control?: { type: 'ephemeral'; ttl: '1h' }
   }[]
 } {
   const sorted = [...articles].sort((a, b) => a.slug.localeCompare(b.slug))
@@ -65,7 +65,10 @@ export function buildAskDocuments(articles: ArticleForAsk[]): {
     citations: { enabled: true as const },
     // One breakpoint after the last article caches the system prompt and the
     // whole corpus together; only the question after it is new each time.
-    ...(i === sorted.length - 1 ? { cache_control: { type: 'ephemeral' as const } } : {}),
+    // An hour rather than the default five minutes: on a low-traffic site most
+    // questions are more than five minutes apart, and every miss re-sends the
+    // whole corpus at full price.
+    ...(i === sorted.length - 1 ? { cache_control: { type: 'ephemeral' as const, ttl: '1h' as const } } : {}),
   }))
 
   return { documents, blocks }

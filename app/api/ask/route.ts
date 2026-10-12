@@ -27,7 +27,14 @@ export const maxDuration = 60
  * an answer down or break one.
  */
 
-const MODEL = 'claude-opus-5-5'
+/**
+ * Haiku, not Opus: answers come from a small fixed corpus with citations, and
+ * at about 1/40th of the cost per question a demo-sized budget lasts for
+ * thousands of questions rather than dozens. Opus is the upgrade if answers
+ * ever need more care — change this line and restore the server-side
+ * `fallbacks` option, which Haiku does not support.
+ */
+const MODEL = 'claude-haiku-5-5'
 
 const takeToken = createRateLimiter()
 
@@ -111,16 +118,12 @@ export async function POST(req: NextRequest) {
         controller.enqueue(encoder.encode(JSON.stringify(event) + '\n'))
 
       try {
-        const response = client.beta.messages.stream({
+        const response = client.messages.stream({
           model: MODEL,
           max_tokens: 2000,
           // Chat answers from a fixed corpus: low effort keeps latency and
           // cost down without hurting quality on this kind of lookup.
           output_config: { effort: 'low' },
-          // If a safety classifier declines, the API retries on its
-          // recommended fallback model inside this same stream.
-          betas: ['server-side-fallback-2026-07-01'],
-          fallbacks: 'default',
           system,
           messages: [
             {

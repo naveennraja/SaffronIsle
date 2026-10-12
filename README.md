@@ -168,7 +168,7 @@ articles, with links to the articles it used.
 flowchart LR
     Q[Reader's question] --> R[POST /api/ask]
     A[All published articles<br/>as cited documents] --> R
-    R -->|Opus 5.5, prompt-cached corpus| C[Claude]
+    R -->|Haiku 5.5, corpus cached 1h| C[Claude]
     C -->|text deltas + citations| R
     R -->|NDJSON: text… then meta| P[Ask panel]
 ```
@@ -182,8 +182,11 @@ there is no retrieval layer at all.
 That is the right call at this size, not a shortcut:
 
 - **The whole corpus is about 25K tokens.** It fits comfortably, and it is sent as a prompt-cached
-  prefix, so after the first question it is billed at the cache-read rate. An answer costs about one
-  to two cents.
+  prefix, kept for an hour because on a low-traffic site most questions are more than the default
+  five minutes apart. Answers use Claude Haiku 5.5, a fraction of a cent per question. The first
+  live tests on Opus 5.5 cost about 8¢ each, mostly uncached, so a $5 demo budget would have lasted
+  about 60 questions. On Haiku with the hour-long cache, it lasts well over a thousand. Opus is a
+  one-line switch in [`app/api/ask/route.ts`](app/api/ask/route.ts) if answers ever need more care.
 - **There is no search step to get wrong.** Retrieval's typical failure is quiet: the right article
   isn't in the top few, and the model answers "not covered" with full confidence. With everything in
   context, that failure cannot happen.
