@@ -374,7 +374,7 @@ Stated plainly, because they're deliberate trade-offs rather than oversights:
 
 ## How I built this
 
-I built this with AI coding tools, mainly Claude Code running in VS Code. They did most of the
+I built this with AI coding tools, mainly Claude Code running in Cursor. They did most of the
 typing. The decisions, the reviewing and the verifying were mine. Three things made that division
 work.
 
