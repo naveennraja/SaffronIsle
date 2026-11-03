@@ -35,7 +35,5 @@ jobs:
       - name: Build
         run: npm run build
 
-      # No test runner is installed yet, so this is a no-op. Add a "test"
-      # script to package.json and it starts running here automatically.
       - name: Test
         run: npm test --if-present
